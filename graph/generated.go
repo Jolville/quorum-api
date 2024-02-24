@@ -47,8 +47,18 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	EmailTakenError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
+	InvalidEmailError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	LoginPayload struct {
-		Email func(childComplexity int) int
+		Errors func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -61,7 +71,7 @@ type ComplexityRoot struct {
 	}
 
 	SignUpPayload struct {
-		Email func(childComplexity int) int
+		Errors func(childComplexity int) int
 	}
 
 	User struct {
@@ -69,6 +79,11 @@ type ComplexityRoot struct {
 		FirstName func(childComplexity int) int
 		ID        func(childComplexity int) int
 		LastName  func(childComplexity int) int
+	}
+
+	UserNotFoundError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
 	}
 }
 
@@ -99,12 +114,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "LoginPayload.email":
-		if e.complexity.LoginPayload.Email == nil {
+	case "EmailTakenError.message":
+		if e.complexity.EmailTakenError.Message == nil {
 			break
 		}
 
-		return e.complexity.LoginPayload.Email(childComplexity), true
+		return e.complexity.EmailTakenError.Message(childComplexity), true
+
+	case "EmailTakenError.path":
+		if e.complexity.EmailTakenError.Path == nil {
+			break
+		}
+
+		return e.complexity.EmailTakenError.Path(childComplexity), true
+
+	case "InvalidEmailError.message":
+		if e.complexity.InvalidEmailError.Message == nil {
+			break
+		}
+
+		return e.complexity.InvalidEmailError.Message(childComplexity), true
+
+	case "InvalidEmailError.path":
+		if e.complexity.InvalidEmailError.Path == nil {
+			break
+		}
+
+		return e.complexity.InvalidEmailError.Path(childComplexity), true
+
+	case "LoginPayload.errors":
+		if e.complexity.LoginPayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.LoginPayload.Errors(childComplexity), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -137,12 +180,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity), true
 
-	case "SignUpPayload.email":
-		if e.complexity.SignUpPayload.Email == nil {
+	case "SignUpPayload.errors":
+		if e.complexity.SignUpPayload.Errors == nil {
 			break
 		}
 
-		return e.complexity.SignUpPayload.Email(childComplexity), true
+		return e.complexity.SignUpPayload.Errors(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -171,6 +214,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.LastName(childComplexity), true
+
+	case "UserNotFoundError.message":
+		if e.complexity.UserNotFoundError.Message == nil {
+			break
+		}
+
+		return e.complexity.UserNotFoundError.Message(childComplexity), true
+
+	case "UserNotFoundError.path":
+		if e.complexity.UserNotFoundError.Path == nil {
+			break
+		}
+
+		return e.complexity.UserNotFoundError.Path(childComplexity), true
 
 	}
 	return 0, false
@@ -381,8 +438,8 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _LoginPayload_email(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginPayload_email(ctx, field)
+func (ec *executionContext) _EmailTakenError_message(ctx context.Context, field graphql.CollectedField, obj *model.EmailTakenError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EmailTakenError_message(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -395,7 +452,7 @@ func (ec *executionContext) _LoginPayload_email(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
+		return obj.Message, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -412,14 +469,184 @@ func (ec *executionContext) _LoginPayload_email(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_LoginPayload_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EmailTakenError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EmailTakenError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EmailTakenError_path(ctx context.Context, field graphql.CollectedField, obj *model.EmailTakenError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EmailTakenError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EmailTakenError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EmailTakenError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InvalidEmailError_message(ctx context.Context, field graphql.CollectedField, obj *model.InvalidEmailError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InvalidEmailError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InvalidEmailError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InvalidEmailError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InvalidEmailError_path(ctx context.Context, field graphql.CollectedField, obj *model.InvalidEmailError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InvalidEmailError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InvalidEmailError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InvalidEmailError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoginPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoginPayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.LoginError)
+	fc.Result = res
+	return ec.marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodelᚐLoginErrorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoginPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LoginPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type LoginError does not have child fields")
 		},
 	}
 	return fc, nil
@@ -464,8 +691,8 @@ func (ec *executionContext) fieldContext_Mutation_signUp(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "email":
-				return ec.fieldContext_SignUpPayload_email(ctx, field)
+			case "errors":
+				return ec.fieldContext_SignUpPayload_errors(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SignUpPayload", field.Name)
 		},
@@ -523,8 +750,8 @@ func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, fie
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "email":
-				return ec.fieldContext_LoginPayload_email(ctx, field)
+			case "errors":
+				return ec.fieldContext_LoginPayload_errors(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
 		},
@@ -723,8 +950,8 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _SignUpPayload_email(ctx context.Context, field graphql.CollectedField, obj *model.SignUpPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SignUpPayload_email(ctx, field)
+func (ec *executionContext) _SignUpPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.SignUpPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SignUpPayload_errors(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -737,7 +964,7 @@ func (ec *executionContext) _SignUpPayload_email(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
+		return obj.Errors, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -749,19 +976,19 @@ func (ec *executionContext) _SignUpPayload_email(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]model.SignUpError)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNSignUpError2ᚕquorumᚑapiᚋgraphᚋmodelᚐSignUpErrorᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SignUpPayload_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SignUpPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SignUpPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type SignUpError does not have child fields")
 		},
 	}
 	return fc, nil
@@ -933,6 +1160,91 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 func (ec *executionContext) fieldContext_User_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserNotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.UserNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserNotFoundError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserNotFoundError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserNotFoundError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserNotFoundError_path(ctx context.Context, field graphql.CollectedField, obj *model.UserNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserNotFoundError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserNotFoundError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserNotFoundError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2788,9 +3100,167 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj i
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet, obj model.BaseError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.EmailTakenError:
+		return ec._EmailTakenError(ctx, sel, &obj)
+	case *model.EmailTakenError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._EmailTakenError(ctx, sel, obj)
+	case model.InvalidEmailError:
+		return ec._InvalidEmailError(ctx, sel, &obj)
+	case *model.InvalidEmailError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._InvalidEmailError(ctx, sel, obj)
+	case model.UserNotFoundError:
+		return ec._UserNotFoundError(ctx, sel, &obj)
+	case *model.UserNotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UserNotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _LoginError(ctx context.Context, sel ast.SelectionSet, obj model.LoginError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.InvalidEmailError:
+		return ec._InvalidEmailError(ctx, sel, &obj)
+	case *model.InvalidEmailError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._InvalidEmailError(ctx, sel, obj)
+	case model.UserNotFoundError:
+		return ec._UserNotFoundError(ctx, sel, &obj)
+	case *model.UserNotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UserNotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SignUpError(ctx context.Context, sel ast.SelectionSet, obj model.SignUpError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.EmailTakenError:
+		return ec._EmailTakenError(ctx, sel, &obj)
+	case *model.EmailTakenError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._EmailTakenError(ctx, sel, obj)
+	case model.InvalidEmailError:
+		return ec._InvalidEmailError(ctx, sel, &obj)
+	case *model.InvalidEmailError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._InvalidEmailError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var emailTakenErrorImplementors = []string{"EmailTakenError", "BaseError", "SignUpError"}
+
+func (ec *executionContext) _EmailTakenError(ctx context.Context, sel ast.SelectionSet, obj *model.EmailTakenError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, emailTakenErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EmailTakenError")
+		case "message":
+			out.Values[i] = ec._EmailTakenError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._EmailTakenError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var invalidEmailErrorImplementors = []string{"InvalidEmailError", "BaseError", "SignUpError", "LoginError"}
+
+func (ec *executionContext) _InvalidEmailError(ctx context.Context, sel ast.SelectionSet, obj *model.InvalidEmailError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, invalidEmailErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InvalidEmailError")
+		case "message":
+			out.Values[i] = ec._InvalidEmailError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._InvalidEmailError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var loginPayloadImplementors = []string{"LoginPayload"}
 
@@ -2803,8 +3273,8 @@ func (ec *executionContext) _LoginPayload(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LoginPayload")
-		case "email":
-			out.Values[i] = ec._LoginPayload_email(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._LoginPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2967,8 +3437,8 @@ func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.Selectio
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SignUpPayload")
-		case "email":
-			out.Values[i] = ec._SignUpPayload_email(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._SignUpPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3026,6 +3496,47 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userNotFoundErrorImplementors = []string{"UserNotFoundError", "BaseError", "LoginError"}
+
+func (ec *executionContext) _UserNotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.UserNotFoundError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userNotFoundErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserNotFoundError")
+		case "message":
+			out.Values[i] = ec._UserNotFoundError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._UserNotFoundError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3405,6 +3916,60 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) marshalNLoginError2quorumᚑapiᚋgraphᚋmodelᚐLoginError(ctx context.Context, sel ast.SelectionSet, v model.LoginError) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LoginError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodelᚐLoginErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LoginError) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLoginError2quorumᚑapiᚋgraphᚋmodelᚐLoginError(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNLoginInput2quorumᚑapiᚋgraphᚋmodelᚐLoginInput(ctx context.Context, v interface{}) (model.LoginInput, error) {
 	res, err := ec.unmarshalInputLoginInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3422,6 +3987,60 @@ func (ec *executionContext) marshalNLoginPayload2ᚖquorumᚑapiᚋgraphᚋmodel
 		return graphql.Null
 	}
 	return ec._LoginPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSignUpError2quorumᚑapiᚋgraphᚋmodelᚐSignUpError(ctx context.Context, sel ast.SelectionSet, v model.SignUpError) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SignUpError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSignUpError2ᚕquorumᚑapiᚋgraphᚋmodelᚐSignUpErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SignUpError) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSignUpError2quorumᚑapiᚋgraphᚋmodelᚐSignUpError(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNSignUpInput2quorumᚑapiᚋgraphᚋmodelᚐSignUpInput(ctx context.Context, v interface{}) (model.SignUpInput, error) {
@@ -3735,6 +4354,44 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

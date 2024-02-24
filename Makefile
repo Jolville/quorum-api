@@ -5,9 +5,10 @@ encrypt:
 .PHONY: decrypt
 decrypt:
 	sops --decrypt .enc.env > .env
-	
-.PHONY: generate-resolvers
-generate-resolvers:
+
+# Generates resolvers	
+.PHONY: rgen
+rgen:
 	go run github.com/99designs/gqlgen generate
 
 .PHONY: watch

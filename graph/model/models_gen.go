@@ -2,12 +2,68 @@
 
 package model
 
+type BaseError interface {
+	IsBaseError()
+	GetMessage() string
+	GetPath() []string
+}
+
+type LoginError interface {
+	IsLoginError()
+}
+
+type SignUpError interface {
+	IsSignUpError()
+}
+
+type EmailTakenError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (EmailTakenError) IsBaseError()            {}
+func (this EmailTakenError) GetMessage() string { return this.Message }
+func (this EmailTakenError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (EmailTakenError) IsSignUpError() {}
+
+type InvalidEmailError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (InvalidEmailError) IsBaseError()            {}
+func (this InvalidEmailError) GetMessage() string { return this.Message }
+func (this InvalidEmailError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (InvalidEmailError) IsSignUpError() {}
+
+func (InvalidEmailError) IsLoginError() {}
+
 type LoginInput struct {
 	Email string `json:"email"`
 }
 
 type LoginPayload struct {
-	Email string `json:"email"`
+	Errors []LoginError `json:"errors"`
 }
 
 type Mutation struct {
@@ -23,7 +79,7 @@ type SignUpInput struct {
 }
 
 type SignUpPayload struct {
-	Email string `json:"email"`
+	Errors []SignUpError `json:"errors"`
 }
 
 type User struct {
@@ -32,3 +88,23 @@ type User struct {
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 }
+
+type UserNotFoundError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (UserNotFoundError) IsBaseError()            {}
+func (this UserNotFoundError) GetMessage() string { return this.Message }
+func (this UserNotFoundError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (UserNotFoundError) IsLoginError() {}
