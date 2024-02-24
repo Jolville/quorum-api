@@ -1,0 +1,2 @@
+creation_rules:
+  - gcp_kms: projects/trusty-charmer-415303/locations/global/keyRings/sops/cryptoKeys/sops-key
