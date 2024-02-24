@@ -7,12 +7,28 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"quorum-api/graph/model"
+	"time"
+
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) (*model.SignUpPayload, error) {
-	panic(fmt.Errorf("not implemented: SignUp - signUp"))
+	userID := uuid.New()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"unverified_user_id": userID,
+		"exp":                time.Now().Add(time.Hour).UTC(),
+	})
+	tokenString, err := token.SignedString([]byte(r.JWTSecret))
+	if err != nil {
+		log.Printf("error signing token: %v", err)
+		return nil, fmt.Errorf("unexpected error occured")
+	}
+	log.Printf("token:\n%v", tokenString)
+	return &model.SignUpPayload{}, nil
 }
 
 // Login is the resolver for the login field.
@@ -22,7 +38,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return nil, nil
 }
 
 // Mutation returns MutationResolver implementation.

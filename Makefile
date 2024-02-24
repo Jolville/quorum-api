@@ -6,11 +6,8 @@ encrypt:
 decrypt:
 	sops --decrypt .enc.env > .env
 
-# Generates resolvers	
-.PHONY: rgen
-rgen:
-	go run github.com/99designs/gqlgen generate
-
 .PHONY: watch
-watch:
-	ls **/*.go | entr -c go run server.go
+watch:	
+	while true; do \
+		fd -e .go | entr -rd go run server.go; \
+	done;
