@@ -2,6 +2,9 @@
 
 package graph
 
+import "quorum-api/database"
+
 type Resolver struct{
 	JWTSecret string
+	DB database.Q
 }

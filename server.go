@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"quorum-api/database"
 	"quorum-api/graph"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -29,10 +30,21 @@ func main() {
 		log.Fatal("expected \"JWT_SECRET\" environment variable")
 	}
 
+	dbConnString, err := database.GetConnectionStringFromEnv()
+	if err != nil {
+		log.Fatalf("getting db conn string: %v", err)
+	}
+
+	db, err := database.New(dbConnString)
+	if err != nil {
+		log.Fatalf("connecting to db: %v", err)
+	}
+
 	srv := handler.NewDefaultServer(
 		graph.NewExecutableSchema(
 			graph.Config{Resolvers: &graph.Resolver{
 				JWTSecret: jwtSecret,
+				DB: db,
 			}},
 		),
 	)

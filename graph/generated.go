@@ -52,18 +52,23 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
+	GetLoginLinkPayload struct {
+		Errors func(childComplexity int) int
+	}
+
 	InvalidEmailError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
 
-	LoginPayload struct {
-		Errors func(childComplexity int) int
+	LinkExpiredError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
 	}
 
 	Mutation struct {
-		Login  func(childComplexity int, input model.LoginInput) int
-		SignUp func(childComplexity int, input model.SignUpInput) int
+		GetLoginLink func(childComplexity int, input model.GetLoginLinkInput) int
+		SignUp       func(childComplexity int, input model.SignUpInput) int
 	}
 
 	Query struct {
@@ -85,11 +90,16 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
+
+	VerifyUserTokenPayload struct {
+		Errors func(childComplexity int) int
+		User   func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
 	SignUp(ctx context.Context, input model.SignUpInput) (*model.SignUpPayload, error)
-	Login(ctx context.Context, input model.LoginInput) (*model.LoginPayload, error)
+	GetLoginLink(ctx context.Context, input model.GetLoginLinkInput) (*model.GetLoginLinkPayload, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*model.User, error)
@@ -128,6 +138,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EmailTakenError.Path(childComplexity), true
 
+	case "GetLoginLinkPayload.errors":
+		if e.complexity.GetLoginLinkPayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.GetLoginLinkPayload.Errors(childComplexity), true
+
 	case "InvalidEmailError.message":
 		if e.complexity.InvalidEmailError.Message == nil {
 			break
@@ -142,24 +159,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.InvalidEmailError.Path(childComplexity), true
 
-	case "LoginPayload.errors":
-		if e.complexity.LoginPayload.Errors == nil {
+	case "LinkExpiredError.message":
+		if e.complexity.LinkExpiredError.Message == nil {
 			break
 		}
 
-		return e.complexity.LoginPayload.Errors(childComplexity), true
+		return e.complexity.LinkExpiredError.Message(childComplexity), true
 
-	case "Mutation.login":
-		if e.complexity.Mutation.Login == nil {
+	case "LinkExpiredError.path":
+		if e.complexity.LinkExpiredError.Path == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
+		return e.complexity.LinkExpiredError.Path(childComplexity), true
+
+	case "Mutation.getLoginLink":
+		if e.complexity.Mutation.GetLoginLink == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_getLoginLink_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.LoginInput)), true
+		return e.complexity.Mutation.GetLoginLink(childComplexity, args["input"].(model.GetLoginLinkInput)), true
 
 	case "Mutation.signUp":
 		if e.complexity.Mutation.SignUp == nil {
@@ -229,6 +253,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserNotFoundError.Path(childComplexity), true
 
+	case "VerifyUserTokenPayload.errors":
+		if e.complexity.VerifyUserTokenPayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.VerifyUserTokenPayload.Errors(childComplexity), true
+
+	case "VerifyUserTokenPayload.user":
+		if e.complexity.VerifyUserTokenPayload.User == nil {
+			break
+		}
+
+		return e.complexity.VerifyUserTokenPayload.User(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -237,8 +275,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputLoginInput,
+		ec.unmarshalInputGetLoginLinkInput,
 		ec.unmarshalInputSignUpInput,
+		ec.unmarshalInputVerifyUserTokenInput,
 	)
 	first := true
 
@@ -355,13 +394,13 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_getLoginLink_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.LoginInput
+	var arg0 model.GetLoginLinkInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLoginInput2quorumᚑapiᚋgraphᚋmodelᚐLoginInput(ctx, tmp)
+		arg0, err = ec.unmarshalNGetLoginLinkInput2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -523,6 +562,50 @@ func (ec *executionContext) fieldContext_EmailTakenError_path(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _GetLoginLinkPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.GetLoginLinkPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GetLoginLinkPayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.GetLoginLinkError)
+	fc.Result = res
+	return ec.marshalNGetLoginLinkError2ᚕquorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkErrorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GetLoginLinkPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GetLoginLinkPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type GetLoginLinkError does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _InvalidEmailError_message(ctx context.Context, field graphql.CollectedField, obj *model.InvalidEmailError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_InvalidEmailError_message(ctx, field)
 	if err != nil {
@@ -608,8 +691,8 @@ func (ec *executionContext) fieldContext_InvalidEmailError_path(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _LoginPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginPayload_errors(ctx, field)
+func (ec *executionContext) _LinkExpiredError_message(ctx context.Context, field graphql.CollectedField, obj *model.LinkExpiredError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LinkExpiredError_message(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -622,7 +705,7 @@ func (ec *executionContext) _LoginPayload_errors(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Errors, nil
+		return obj.Message, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -634,19 +717,60 @@ func (ec *executionContext) _LoginPayload_errors(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.LoginError)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodelᚐLoginErrorᚄ(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_LoginPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LinkExpiredError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "LoginPayload",
+		Object:     "LinkExpiredError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type LoginError does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LinkExpiredError_path(ctx context.Context, field graphql.CollectedField, obj *model.LinkExpiredError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LinkExpiredError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LinkExpiredError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LinkExpiredError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -711,8 +835,8 @@ func (ec *executionContext) fieldContext_Mutation_signUp(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_login(ctx, field)
+func (ec *executionContext) _Mutation_getLoginLink(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_getLoginLink(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -725,7 +849,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Login(rctx, fc.Args["input"].(model.LoginInput))
+		return ec.resolvers.Mutation().GetLoginLink(rctx, fc.Args["input"].(model.GetLoginLinkInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -737,12 +861,12 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.LoginPayload)
+	res := resTmp.(*model.GetLoginLinkPayload)
 	fc.Result = res
-	return ec.marshalNLoginPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐLoginPayload(ctx, field.Selections, res)
+	return ec.marshalNGetLoginLinkPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_getLoginLink(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -751,9 +875,9 @@ func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "errors":
-				return ec.fieldContext_LoginPayload_errors(ctx, field)
+				return ec.fieldContext_GetLoginLinkPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type GetLoginLinkPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -763,7 +887,7 @@ func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_login_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_getLoginLink_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1250,6 +1374,101 @@ func (ec *executionContext) fieldContext_UserNotFoundError_path(ctx context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyUserTokenPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyUserTokenPayload_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖquorumᚑapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyUserTokenPayload_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyUserTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "firstName":
+				return ec.fieldContext_User_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_User_lastName(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyUserTokenPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyUserTokenPayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.VerifyUserTokenError)
+	fc.Result = res
+	return ec.marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenErrorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyUserTokenPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyUserTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type VerifyUserTokenError does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3028,8 +3247,8 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj interface{}) (model.LoginInput, error) {
-	var it model.LoginInput
+func (ec *executionContext) unmarshalInputGetLoginLinkInput(ctx context.Context, obj interface{}) (model.GetLoginLinkInput, error) {
+	var it model.GetLoginLinkInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3096,6 +3315,33 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputVerifyUserTokenInput(ctx context.Context, obj interface{}) (model.VerifyUserTokenInput, error) {
+	var it model.VerifyUserTokenInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"token"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "token":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Token = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3125,12 +3371,19 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._UserNotFoundError(ctx, sel, obj)
+	case model.LinkExpiredError:
+		return ec._LinkExpiredError(ctx, sel, &obj)
+	case *model.LinkExpiredError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._LinkExpiredError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
 }
 
-func (ec *executionContext) _LoginError(ctx context.Context, sel ast.SelectionSet, obj model.LoginError) graphql.Marshaler {
+func (ec *executionContext) _GetLoginLinkError(ctx context.Context, sel ast.SelectionSet, obj model.GetLoginLinkError) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
@@ -3171,6 +3424,22 @@ func (ec *executionContext) _SignUpError(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._InvalidEmailError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _VerifyUserTokenError(ctx context.Context, sel ast.SelectionSet, obj model.VerifyUserTokenError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.LinkExpiredError:
+		return ec._LinkExpiredError(ctx, sel, &obj)
+	case *model.LinkExpiredError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._LinkExpiredError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -3221,7 +3490,46 @@ func (ec *executionContext) _EmailTakenError(ctx context.Context, sel ast.Select
 	return out
 }
 
-var invalidEmailErrorImplementors = []string{"InvalidEmailError", "BaseError", "SignUpError", "LoginError"}
+var getLoginLinkPayloadImplementors = []string{"GetLoginLinkPayload"}
+
+func (ec *executionContext) _GetLoginLinkPayload(ctx context.Context, sel ast.SelectionSet, obj *model.GetLoginLinkPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, getLoginLinkPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GetLoginLinkPayload")
+		case "errors":
+			out.Values[i] = ec._GetLoginLinkPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var invalidEmailErrorImplementors = []string{"InvalidEmailError", "BaseError", "SignUpError", "GetLoginLinkError"}
 
 func (ec *executionContext) _InvalidEmailError(ctx context.Context, sel ast.SelectionSet, obj *model.InvalidEmailError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, invalidEmailErrorImplementors)
@@ -3262,22 +3570,24 @@ func (ec *executionContext) _InvalidEmailError(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var loginPayloadImplementors = []string{"LoginPayload"}
+var linkExpiredErrorImplementors = []string{"LinkExpiredError", "BaseError", "VerifyUserTokenError"}
 
-func (ec *executionContext) _LoginPayload(ctx context.Context, sel ast.SelectionSet, obj *model.LoginPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, loginPayloadImplementors)
+func (ec *executionContext) _LinkExpiredError(ctx context.Context, sel ast.SelectionSet, obj *model.LinkExpiredError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, linkExpiredErrorImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("LoginPayload")
-		case "errors":
-			out.Values[i] = ec._LoginPayload_errors(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("LinkExpiredError")
+		case "message":
+			out.Values[i] = ec._LinkExpiredError_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "path":
+			out.Values[i] = ec._LinkExpiredError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3327,9 +3637,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "login":
+		case "getLoginLink":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_login(ctx, field)
+				return ec._Mutation_getLoginLink(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3519,7 +3829,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var userNotFoundErrorImplementors = []string{"UserNotFoundError", "BaseError", "LoginError"}
+var userNotFoundErrorImplementors = []string{"UserNotFoundError", "BaseError", "GetLoginLinkError"}
 
 func (ec *executionContext) _UserNotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.UserNotFoundError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userNotFoundErrorImplementors)
@@ -3537,6 +3847,47 @@ func (ec *executionContext) _UserNotFoundError(ctx context.Context, sel ast.Sele
 			}
 		case "path":
 			out.Values[i] = ec._UserNotFoundError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var verifyUserTokenPayloadImplementors = []string{"VerifyUserTokenPayload"}
+
+func (ec *executionContext) _VerifyUserTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.VerifyUserTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, verifyUserTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VerifyUserTokenPayload")
+		case "user":
+			out.Values[i] = ec._VerifyUserTokenPayload_user(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._VerifyUserTokenPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3901,32 +4252,17 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) marshalNLoginError2quorumᚑapiᚋgraphᚋmodelᚐLoginError(ctx context.Context, sel ast.SelectionSet, v model.LoginError) graphql.Marshaler {
+func (ec *executionContext) marshalNGetLoginLinkError2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkError(ctx context.Context, sel ast.SelectionSet, v model.GetLoginLinkError) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._LoginError(ctx, sel, v)
+	return ec._GetLoginLinkError(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodelᚐLoginErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LoginError) graphql.Marshaler {
+func (ec *executionContext) marshalNGetLoginLinkError2ᚕquorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GetLoginLinkError) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3950,7 +4286,7 @@ func (ec *executionContext) marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodel�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLoginError2quorumᚑapiᚋgraphᚋmodelᚐLoginError(ctx, sel, v[i])
+			ret[i] = ec.marshalNGetLoginLinkError2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkError(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3970,23 +4306,38 @@ func (ec *executionContext) marshalNLoginError2ᚕquorumᚑapiᚋgraphᚋmodel�
 	return ret
 }
 
-func (ec *executionContext) unmarshalNLoginInput2quorumᚑapiᚋgraphᚋmodelᚐLoginInput(ctx context.Context, v interface{}) (model.LoginInput, error) {
-	res, err := ec.unmarshalInputLoginInput(ctx, v)
+func (ec *executionContext) unmarshalNGetLoginLinkInput2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkInput(ctx context.Context, v interface{}) (model.GetLoginLinkInput, error) {
+	res, err := ec.unmarshalInputGetLoginLinkInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNLoginPayload2quorumᚑapiᚋgraphᚋmodelᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v model.LoginPayload) graphql.Marshaler {
-	return ec._LoginPayload(ctx, sel, &v)
+func (ec *executionContext) marshalNGetLoginLinkPayload2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkPayload(ctx context.Context, sel ast.SelectionSet, v model.GetLoginLinkPayload) graphql.Marshaler {
+	return ec._GetLoginLinkPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLoginPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v *model.LoginPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNGetLoginLinkPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkPayload(ctx context.Context, sel ast.SelectionSet, v *model.GetLoginLinkPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._LoginPayload(ctx, sel, v)
+	return ec._GetLoginLinkPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNSignUpError2quorumᚑapiᚋgraphᚋmodelᚐSignUpError(ctx context.Context, sel ast.SelectionSet, v model.SignUpError) graphql.Marshaler {
@@ -4075,6 +4426,60 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNVerifyUserTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenError(ctx context.Context, sel ast.SelectionSet, v model.VerifyUserTokenError) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VerifyUserTokenError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.VerifyUserTokenError) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNVerifyUserTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenError(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

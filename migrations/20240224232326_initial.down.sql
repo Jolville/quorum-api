@@ -1,0 +1,3 @@
+begin;
+
+drop database quorum;

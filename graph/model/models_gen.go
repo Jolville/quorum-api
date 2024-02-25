@@ -8,12 +8,16 @@ type BaseError interface {
 	GetPath() []string
 }
 
-type LoginError interface {
-	IsLoginError()
+type GetLoginLinkError interface {
+	IsGetLoginLinkError()
 }
 
 type SignUpError interface {
 	IsSignUpError()
+}
+
+type VerifyUserTokenError interface {
+	IsVerifyUserTokenError()
 }
 
 type EmailTakenError struct {
@@ -36,6 +40,14 @@ func (this EmailTakenError) GetPath() []string {
 
 func (EmailTakenError) IsSignUpError() {}
 
+type GetLoginLinkInput struct {
+	Email string `json:"email"`
+}
+
+type GetLoginLinkPayload struct {
+	Errors []GetLoginLinkError `json:"errors"`
+}
+
 type InvalidEmailError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
@@ -56,15 +68,27 @@ func (this InvalidEmailError) GetPath() []string {
 
 func (InvalidEmailError) IsSignUpError() {}
 
-func (InvalidEmailError) IsLoginError() {}
+func (InvalidEmailError) IsGetLoginLinkError() {}
 
-type LoginInput struct {
-	Email string `json:"email"`
+type LinkExpiredError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
 }
 
-type LoginPayload struct {
-	Errors []LoginError `json:"errors"`
+func (LinkExpiredError) IsBaseError()            {}
+func (this LinkExpiredError) GetMessage() string { return this.Message }
+func (this LinkExpiredError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
 }
+
+func (LinkExpiredError) IsVerifyUserTokenError() {}
 
 type Mutation struct {
 }
@@ -107,4 +131,13 @@ func (this UserNotFoundError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (UserNotFoundError) IsLoginError() {}
+func (UserNotFoundError) IsGetLoginLinkError() {}
+
+type VerifyUserTokenInput struct {
+	Token string `json:"token"`
+}
+
+type VerifyUserTokenPayload struct {
+	User   *User                  `json:"user,omitempty"`
+	Errors []VerifyUserTokenError `json:"errors"`
+}

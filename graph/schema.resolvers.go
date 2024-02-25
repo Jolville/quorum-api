@@ -31,9 +31,9 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	return &model.SignUpPayload{}, nil
 }
 
-// Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginPayload, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+// GetLoginLink is the resolver for the getLoginLink field.
+func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLoginLinkInput) (*model.GetLoginLinkPayload, error) {
+	panic(fmt.Errorf("not implemented: GetLoginLink - getLoginLink"))
 }
 
 // User is the resolver for the user field.

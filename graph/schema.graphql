@@ -42,7 +42,7 @@ type SignUpPayload {
   errors: [SignUpError!]!
 }
 
-input LoginInput {
+input GetLoginLinkInput {
   email: String!
 }
 
@@ -51,13 +51,29 @@ type UserNotFoundError implements BaseError {
   path: [String!]
 }
 
-union LoginError = InvalidEmailError | UserNotFoundError
+union GetLoginLinkError = InvalidEmailError | UserNotFoundError
 
-type LoginPayload {
-  errors: [LoginError!]!
+type GetLoginLinkPayload {
+  errors: [GetLoginLinkError!]!
+}
+
+input VerifyUserTokenInput {
+  token: String!
+}
+
+type LinkExpiredError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union VerifyUserTokenError = LinkExpiredError
+
+type VerifyUserTokenPayload {
+  user: User
+  errors: [VerifyUserTokenError!]!
 }
 
 type Mutation {
   signUp(input: SignUpInput!): SignUpPayload!
-  login(input: LoginInput!): LoginPayload!
+  getLoginLink(input: GetLoginLinkInput!): GetLoginLinkPayload!
 }
