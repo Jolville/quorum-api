@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -35,7 +36,7 @@ func New(uri string) (*sqlx.DB, error) {
 
 func GetConnectionStringFromEnv() (string, error) {
 	if os.Getenv("GO_ENV") == "local" {
-		return "postgres:jesse@localhost:5432/quorum?ssl_mode=disable", nil
+		return "postgres://postgres:jesse@localhost:5432/quorum", nil
 	}
 
 	return "", fmt.Errorf("not implemented outside local env")

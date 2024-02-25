@@ -2,9 +2,15 @@
 
 package graph
 
-import "quorum-api/database"
+import (
+	srvuser "quorum-api/services/user"
+)
 
 type Resolver struct{
 	JWTSecret string
-	DB database.Q
+	Services Services
+}
+
+type Services struct {
+	User srvuser.SRVUser
 }

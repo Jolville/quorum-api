@@ -2,6 +2,13 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	srvuser "quorum-api/services/user"
+	"strconv"
+)
+
 type BaseError interface {
 	IsBaseError()
 	GetMessage() string
@@ -41,7 +48,8 @@ func (this EmailTakenError) GetPath() []string {
 func (EmailTakenError) IsSignUpError() {}
 
 type GetLoginLinkInput struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	ReturnTo string `json:"returnTo"`
 }
 
 type GetLoginLinkPayload struct {
@@ -70,6 +78,28 @@ func (InvalidEmailError) IsSignUpError() {}
 
 func (InvalidEmailError) IsGetLoginLinkError() {}
 
+type InvalidReturnToError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (InvalidReturnToError) IsBaseError()            {}
+func (this InvalidReturnToError) GetMessage() string { return this.Message }
+func (this InvalidReturnToError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (InvalidReturnToError) IsSignUpError() {}
+
+func (InvalidReturnToError) IsGetLoginLinkError() {}
+
 type LinkExpiredError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
@@ -97,20 +127,15 @@ type Query struct {
 }
 
 type SignUpInput struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
+	FirstName  string         `json:"firstName"`
+	LastName   string         `json:"lastName"`
+	Email      string         `json:"email"`
+	Profession UserProfession `json:"profession"`
+	ReturnTo   string         `json:"returnTo"`
 }
 
 type SignUpPayload struct {
 	Errors []SignUpError `json:"errors"`
-}
-
-type User struct {
-	ID        string `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
 }
 
 type UserNotFoundError struct {
@@ -138,6 +163,50 @@ type VerifyUserTokenInput struct {
 }
 
 type VerifyUserTokenPayload struct {
-	User   *User                  `json:"user,omitempty"`
-	Errors []VerifyUserTokenError `json:"errors"`
+	User     *srvuser.User          `json:"user,omitempty"`
+	NewToken *string                `json:"newToken,omitempty"`
+	Errors   []VerifyUserTokenError `json:"errors"`
+}
+
+type UserProfession string
+
+const (
+	UserProfessionProductDesigner  UserProfession = "PRODUCT_DESIGNER"
+	UserProfessionSoftwareEngineer UserProfession = "SOFTWARE_ENGINEER"
+	UserProfessionOther            UserProfession = "OTHER"
+)
+
+var AllUserProfession = []UserProfession{
+	UserProfessionProductDesigner,
+	UserProfessionSoftwareEngineer,
+	UserProfessionOther,
+}
+
+func (e UserProfession) IsValid() bool {
+	switch e {
+	case UserProfessionProductDesigner, UserProfessionSoftwareEngineer, UserProfessionOther:
+		return true
+	}
+	return false
+}
+
+func (e UserProfession) String() string {
+	return string(e)
+}
+
+func (e *UserProfession) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UserProfession(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UserProfession", str)
+	}
+	return nil
+}
+
+func (e UserProfession) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"quorum-api/database"
 	"quorum-api/graph"
+	srvuser "quorum-api/services/user"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -40,14 +41,20 @@ func main() {
 		log.Fatalf("connecting to db: %v", err)
 	}
 
-	srv := handler.NewDefaultServer(
+	services := graph.Services{
+		User: srvuser.New(db),
+	}
+
+	var srv http.Handler = handler.NewDefaultServer(
 		graph.NewExecutableSchema(
 			graph.Config{Resolvers: &graph.Resolver{
 				JWTSecret: jwtSecret,
-				DB: db,
+				Services: services,
 			}},
 		),
 	)
+
+	srv = graph.LoadersMiddleware(services, srv)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

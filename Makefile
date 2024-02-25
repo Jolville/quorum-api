@@ -2,11 +2,11 @@ export GO_ENV=local
 
 .PHONY: encrypt
 encrypt:
-	sops --encrypt .env > .enc.env
+	sops --encrypt secrets.env > secrets.enc.env
 
 .PHONY: decrypt
 decrypt:
-	sops --decrypt .enc.env > .env
+	sops --decrypt secrets.enc.env > secrets.env
 
 .PHONY: watch
 watch:

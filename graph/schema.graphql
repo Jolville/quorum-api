@@ -1,9 +1,9 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+scalar UUID
+
+scalar Time
 
 type User {
-  id: ID!
+  id: UUID!
   firstName: String!
   lastName: String!
   email: String!
@@ -13,10 +13,19 @@ type Query {
   user: User
 }
 
+enum UserProfession {
+  PRODUCT_DESIGNER
+  SOFTWARE_ENGINEER
+  OTHER
+}
+
 input SignUpInput {
   firstName: String!
   lastName: String!
   email: String!
+  profession: UserProfession!
+  # Relative url, e.g. /post/123
+  returnTo: String!
 }
 
 interface BaseError {
@@ -36,7 +45,12 @@ type InvalidEmailError implements BaseError {
   path: [String!]
 }
 
-union SignUpError = EmailTakenError | InvalidEmailError
+type InvalidReturnToError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union SignUpError = EmailTakenError | InvalidEmailError | InvalidReturnToError
 
 type SignUpPayload {
   errors: [SignUpError!]!
@@ -44,6 +58,8 @@ type SignUpPayload {
 
 input GetLoginLinkInput {
   email: String!
+  # Relative url, e.g. /post/123
+  returnTo: String!
 }
 
 type UserNotFoundError implements BaseError {
@@ -51,7 +67,10 @@ type UserNotFoundError implements BaseError {
   path: [String!]
 }
 
-union GetLoginLinkError = InvalidEmailError | UserNotFoundError
+union GetLoginLinkError =
+    InvalidEmailError
+  | UserNotFoundError
+  | InvalidReturnToError
 
 type GetLoginLinkPayload {
   errors: [GetLoginLinkError!]!
@@ -70,10 +89,12 @@ union VerifyUserTokenError = LinkExpiredError
 
 type VerifyUserTokenPayload {
   user: User
+  newToken: ID
   errors: [VerifyUserTokenError!]!
 }
 
 type Mutation {
   signUp(input: SignUpInput!): SignUpPayload!
   getLoginLink(input: GetLoginLinkInput!): GetLoginLinkPayload!
+  verifyUserToken(input: VerifyUserTokenInput!): VerifyUserTokenPayload!
 }
