@@ -10,7 +10,7 @@ import (
 
 type SRVUser interface {
 	GetUsersByFilter(ctx context.Context, request GetUsersByFilterRequest) ([]User, error)
-	CreateUnverifiedUser(ctx context.Context, request CreateUnverifiedUserRequest) (string, error)
+	CreateUnverifiedUser(ctx context.Context, request CreateUnverifiedUserRequest) (uuid.UUID, error)
 	VerifyUser(ctx context.Context, id uuid.UUID) error
 }
 
@@ -60,7 +60,7 @@ func (s *srv) GetUsersByFilter(ctx context.Context, request GetUsersByFilterRequ
 	panic("not implemented")
 }
 
-func (s *srv) CreateUnverifiedUser(ctx context.Context, request CreateUnverifiedUserRequest) (string, error) {
+func (s *srv) CreateUnverifiedUser(ctx context.Context, request CreateUnverifiedUserRequest) (uuid.UUID, error) {
 	panic("not implemented")
 }
 

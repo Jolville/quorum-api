@@ -20,10 +20,16 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
-	
-	err := godotenv.Load()
-	if err != nil {
-	  log.Fatal("Error loading .env file")
+
+	if os.Getenv("GO_ENV") == "local" {
+		err := godotenv.Load("local.env")
+		if err != nil {
+			log.Fatal("Error loading local.env file")
+		}
+		err = godotenv.Load("local.secrets.env")
+		if err != nil {
+			log.Fatal("Error loading local.secrets.env file")
+		}
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
@@ -49,7 +55,7 @@ func main() {
 		graph.NewExecutableSchema(
 			graph.Config{Resolvers: &graph.Resolver{
 				JWTSecret: jwtSecret,
-				Services: services,
+				Services:  services,
 			}},
 		),
 	)

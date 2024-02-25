@@ -16,6 +16,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // SignUp is the resolver for the signUp field.
@@ -61,9 +62,14 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 		log.Printf("error creating unverified user: %v", err)
 		return nil, fmt.Errorf("unexpected error occured")
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"unverified_user_id": userID,
-		"exp":                time.Now().Add(time.Hour).UTC(),
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
+		IsVerified: false,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Subject:   userID.String(),
+		},
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
@@ -114,9 +120,14 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	}
 
 	user := users[0]
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"unverified_user_id": user.ID,
-		"exp":                time.Now().Add(time.Hour).UTC(),
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
+		IsVerified: false,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Subject:   user.ID.String(),
+		},
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
@@ -136,8 +147,59 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 }
 
 // VerifyUserToken is the resolver for the verifyUserToken field.
-func (r *mutationResolver) VerifyUserToken(ctx context.Context, input model.VerifyUserTokenInput) (*model.VerifyUserTokenPayload, error) {
-	panic(fmt.Errorf("not implemented: VerifyUserToken - verifyUserToken"))
+func (r *mutationResolver) VerifyUserToken(
+	ctx context.Context,
+	input model.VerifyUserTokenInput,
+) (*model.VerifyUserTokenPayload, error) {
+	token, err := jwt.ParseWithClaims(
+		input.Token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(r.JWTSecret), nil
+		})
+	if err != nil {
+		if err == jwt.ErrTokenExpired {
+			return &model.VerifyUserTokenPayload{
+				Errors: []model.VerifyUserTokenError{
+					&model.LinkExpiredError{
+						Message: "Link has expired, either call sign up (new users), or generate a new login link (existing users)",
+					},
+				},
+			}, nil
+		}
+		panic(fmt.Errorf("parsing token: %v", err))
+	} else if claims, ok := token.Claims.(*JWTClaims); ok {
+		if claims.IsVerified {
+			panic("expected token to not be verified")
+		}
+		userID, err := uuid.Parse(claims.Subject)
+		if err != nil {
+			panic("expected userID to be a uuid")
+		}
+		r.Services.User.VerifyUser(ctx, userID)
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
+			IsVerified: true,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				NotBefore: jwt.NewNumericDate(time.Now()),
+				Subject:   userID.String(),
+			},
+		})
+		tokenString, err := token.SignedString([]byte(r.JWTSecret))
+		if err != nil {
+			log.Printf("error signing token: %v", err)
+			return nil, fmt.Errorf("unexpected error occured")
+		}
+		user, err := GetLoaders(ctx).UserLoader.Load(ctx, userID)
+		if err != nil {
+			log.Printf("loading user: %v", err)
+			return nil, fmt.Errorf("unexpected error occured")
+		}
+		return &model.VerifyUserTokenPayload{
+			NewToken: &tokenString,
+			User:     &user,
+		}, nil
+	}
+	panic(fmt.Errorf("unknown claims type, cannot proceed"))
 }
 
 // User is the resolver for the user field.
