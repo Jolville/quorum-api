@@ -10,11 +10,7 @@ import (
 	"github.com/vikstrous/dataloadgen"
 )
 
-type ctxKey string
-
-const (
-	loadersKey = ctxKey("dataloaders")
-)
+type loadersCtxKey struct{}
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
@@ -26,7 +22,7 @@ type getters struct {
 }
 
 func NewLoaders(services Services) *Loaders {
-	getters := getters{ services: services }	
+	getters := getters{services: services}
 	return &Loaders{
 		UserLoader: dataloadgen.NewLoader(
 			getters.getUsers, dataloadgen.WithWait(time.Millisecond),
@@ -38,7 +34,7 @@ func LoadersMiddleware(services Services, next http.Handler) http.Handler {
 	// return a middleware that injects the loader to the request context
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		loader := NewLoaders(services)
-		r = r.WithContext(context.WithValue(r.Context(), loadersKey, loader))
+		r = r.WithContext(context.WithValue(r.Context(), loadersCtxKey{}, loader))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -58,5 +54,5 @@ func (g *getters) getUsers(
 }
 
 func GetLoaders(ctx context.Context) *Loaders {
-	return ctx.Value(loadersKey).(*Loaders)
+	return ctx.Value(loadersCtxKey{}).(*Loaders)
 }

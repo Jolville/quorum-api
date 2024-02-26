@@ -204,7 +204,15 @@ func (r *mutationResolver) VerifyUserToken(
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*srvuser.User, error) {
-	return nil, nil
+	verifiedUser := GetVerifiedUser(ctx)
+	if !verifiedUser.Valid {
+		return nil, nil
+	}
+	user, err := GetLoaders(ctx).UserLoader.Load(ctx, verifiedUser.UUID)
+	if err != nil {
+		return nil, fmt.Errorf("getting user: %w", err)
+	}
+	return &user, nil
 }
 
 // Mutation returns MutationResolver implementation.
