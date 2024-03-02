@@ -51,10 +51,9 @@ type srv struct {
 }
 
 func (s *srv) GetCustomersByFilter(ctx context.Context, request GetCustomersByFilterRequest) ([]Customer, error) {
-	customers, err := getCustomersByFilter(ctx, s.db, getCustomersByFilterParams{
-		IDs:    request.IDs,
-		Emails: request.Emails,
-	}, DBLockUnspecified)
+	customers, err := getCustomersByFilter(
+		ctx, s.db, getCustomersByFilterParams(request), DBLockUnspecified,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("getting customers: %w", err)
 	}
