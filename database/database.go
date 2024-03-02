@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 )
@@ -40,4 +42,36 @@ func GetConnectionStringFromEnv() (string, error) {
 	}
 
 	return "", fmt.Errorf("not implemented outside local env")
+}
+
+type UUIDSlice []uuid.UUID
+
+func (u *UUIDSlice) Scan(src interface{}) error {
+	switch src := src.(type) {
+	case string:
+		out := []uuid.UUID{}
+		r := strings.NewReplacer("{", "", "}", "")
+		rawUUIDs := strings.Split(r.Replace(src), ",")
+
+		for _, rawUUID := range rawUUIDs {
+			parsedUUID, err := uuid.Parse(rawUUID)
+			if err != nil {
+				return fmt.Errorf("parsing uuid %q: %w", rawUUID, err)
+			}
+			out = append(out, parsedUUID)
+		}
+
+		*u = out
+
+	case nil:
+		*u = []uuid.UUID{}
+	default:
+		return fmt.Errorf("unsupported type for UUIDSlice: %T", src)
+	}
+
+	return nil
+}
+
+func (u *UUIDSlice) Slice() []uuid.UUID {
+	return []uuid.UUID(*u)
 }

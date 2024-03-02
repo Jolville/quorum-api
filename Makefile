@@ -10,7 +10,7 @@ decrypt:
 
 .PHONY: watch
 watch:
-	while true; do \
+	while sleep 1; do \
 		fd -e .go | entr -rd go run server.go; \
 	done;
 

@@ -88,10 +88,11 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Email     func(childComplexity int) int
-		FirstName func(childComplexity int) int
-		ID        func(childComplexity int) int
-		LastName  func(childComplexity int) int
+		Email       func(childComplexity int) int
+		FirstName   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		LastName    func(childComplexity int) int
+		Profression func(childComplexity int) int
 	}
 
 	UserNotFoundError struct {
@@ -274,6 +275,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.LastName(childComplexity), true
+
+	case "User.profression":
+		if e.complexity.User.Profression == nil {
+			break
+		}
+
+		return e.complexity.User.Profression(childComplexity), true
 
 	case "UserNotFoundError.message":
 		if e.complexity.UserNotFoundError.Message == nil {
@@ -1144,6 +1152,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_lastName(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "profression":
+				return ec.fieldContext_User_profression(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1500,6 +1510,50 @@ func (ec *executionContext) fieldContext_User_email(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _User_profression(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_profression(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Profression, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_profression(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserNotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.UserNotFoundError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserNotFoundError_message(ctx, field)
 	if err != nil {
@@ -1629,6 +1683,8 @@ func (ec *executionContext) fieldContext_VerifyUserTokenPayload_user(ctx context
 				return ec.fieldContext_User_lastName(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "profression":
+				return ec.fieldContext_User_profression(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3565,7 +3621,7 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj i
 			it.Email = data
 		case "profession":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("profession"))
-			data, err := ec.unmarshalNUserProfession2quorumᚑapiᚋgraphᚋmodelᚐUserProfession(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4140,6 +4196,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profression":
+			out.Values[i] = ec._User_profression(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4765,16 +4826,6 @@ func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNUserProfession2quorumᚑapiᚋgraphᚋmodelᚐUserProfession(ctx context.Context, v interface{}) (model.UserProfession, error) {
-	var res model.UserProfession
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNUserProfession2quorumᚑapiᚋgraphᚋmodelᚐUserProfession(ctx context.Context, sel ast.SelectionSet, v model.UserProfession) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) marshalNVerifyUserTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenError(ctx context.Context, sel ast.SelectionSet, v model.VerifyUserTokenError) graphql.Marshaler {

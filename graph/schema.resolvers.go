@@ -147,10 +147,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 }
 
 // VerifyUserToken is the resolver for the verifyUserToken field.
-func (r *mutationResolver) VerifyUserToken(
-	ctx context.Context,
-	input model.VerifyUserTokenInput,
-) (*model.VerifyUserTokenPayload, error) {
+func (r *mutationResolver) VerifyUserToken(ctx context.Context, input model.VerifyUserTokenInput) (*model.VerifyUserTokenPayload, error) {
 	token, err := jwt.ParseWithClaims(
 		input.Token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(r.JWTSecret), nil

@@ -3,10 +3,7 @@
 package model
 
 import (
-	"fmt"
-	"io"
 	srvuser "quorum-api/services/user"
-	"strconv"
 )
 
 type BaseError interface {
@@ -127,11 +124,11 @@ type Query struct {
 }
 
 type SignUpInput struct {
-	FirstName  string         `json:"firstName"`
-	LastName   string         `json:"lastName"`
-	Email      string         `json:"email"`
-	Profession UserProfession `json:"profession"`
-	ReturnTo   string         `json:"returnTo"`
+	FirstName  string `json:"firstName"`
+	LastName   string `json:"lastName"`
+	Email      string `json:"email"`
+	Profession string `json:"profession"`
+	ReturnTo   string `json:"returnTo"`
 }
 
 type SignUpPayload struct {
@@ -166,47 +163,4 @@ type VerifyUserTokenPayload struct {
 	User     *srvuser.User          `json:"user,omitempty"`
 	NewToken *string                `json:"newToken,omitempty"`
 	Errors   []VerifyUserTokenError `json:"errors"`
-}
-
-type UserProfession string
-
-const (
-	UserProfessionProductDesigner  UserProfession = "PRODUCT_DESIGNER"
-	UserProfessionSoftwareEngineer UserProfession = "SOFTWARE_ENGINEER"
-	UserProfessionOther            UserProfession = "OTHER"
-)
-
-var AllUserProfession = []UserProfession{
-	UserProfessionProductDesigner,
-	UserProfessionSoftwareEngineer,
-	UserProfessionOther,
-}
-
-func (e UserProfession) IsValid() bool {
-	switch e {
-	case UserProfessionProductDesigner, UserProfessionSoftwareEngineer, UserProfessionOther:
-		return true
-	}
-	return false
-}
-
-func (e UserProfession) String() string {
-	return string(e)
-}
-
-func (e *UserProfession) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = UserProfession(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid UserProfession", str)
-	}
-	return nil
-}
-
-func (e UserProfession) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
 }

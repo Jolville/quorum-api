@@ -7,23 +7,18 @@ type User {
   firstName: String!
   lastName: String!
   email: String!
+  profression: String!
 }
 
 type Query {
   user: User
 }
 
-enum UserProfession {
-  PRODUCT_DESIGNER
-  SOFTWARE_ENGINEER
-  OTHER
-}
-
 input SignUpInput {
   firstName: String!
   lastName: String!
   email: String!
-  profession: UserProfession!
+  profession: String!
   # Relative url, e.g. /post/123
   returnTo: String!
 }
