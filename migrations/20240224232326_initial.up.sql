@@ -19,7 +19,7 @@ create table customer (
     profession varchar(64) not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    deleted_at timestamptz not null default now()
+    deleted_at timestamptz
 );
 
 create unique index idx_customer_email on customer(email);

@@ -18,8 +18,8 @@ const (
 )
 
 type getCustomersByFilterParams struct {
-	IDs    database.UUIDSlice
-	Emails database.EmailSlice
+	IDs    []uuid.UUID
+	Emails []string
 }
 
 type customer struct {
@@ -30,7 +30,6 @@ type customer struct {
 	Profession string    `db:"profession"`
 }
 
-// TODO fix this
 func getCustomersByFilter(
 	ctx context.Context,
 	db database.Q,
@@ -50,7 +49,7 @@ func getCustomersByFilter(
 		query = fmt.Sprintf("%s and email = any($%v)", query, len(args))
 	}
 	if len(params.IDs) > 0 {
-		args = append(args, params.IDs.Slice())
+		args = append(args, params.IDs)
 		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
 	}
 
@@ -134,7 +133,7 @@ func getUnverifiedCustomer(
 ) (*customer, error) {
 	customer := customer{}
 	if err := q.GetContext(ctx, &customer, `
-		select email, first_name, last_name, profession from unverified_customer where id = $1
+		select id, email, first_name, last_name, profession from unverified_customer where id = $1
 	`, id); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errNoUnverifiedCustomer

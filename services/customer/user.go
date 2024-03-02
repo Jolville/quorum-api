@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
-	"quorum-api/database"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -53,8 +52,8 @@ type srv struct {
 
 func (s *srv) GetCustomersByFilter(ctx context.Context, request GetCustomersByFilterRequest) ([]Customer, error) {
 	customers, err := getCustomersByFilter(ctx, s.db, getCustomersByFilterParams{
-		IDs:    database.UUIDSlice(request.IDs),
-		Emails: database.EmailSlice(request.Emails),
+		IDs:    request.IDs,
+		Emails: request.Emails,
 	}, DBLockUnspecified)
 	if err != nil {
 		return nil, fmt.Errorf("getting customers: %w", err)
