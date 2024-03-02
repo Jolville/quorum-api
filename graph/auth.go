@@ -42,7 +42,7 @@ func Middleware(jwtSecret string) func(http.Handler) http.Handler {
 	}
 }
 
-func GetVerifiedUser(ctx context.Context) uuid.NullUUID {
+func GetVerifiedCustomer(ctx context.Context) uuid.NullUUID {
 	raw, ok := ctx.Value(authCtxKey{}).(uuid.UUID)
 	if !ok {
 		return uuid.NullUUID{}

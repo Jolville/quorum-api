@@ -1,9 +1,7 @@
 begin;
 
-drop table "user";
+drop table customer;
 
-drop table unverified_user;
-
-drop type user_profression;
+drop table unverified_customer;
 
 commit;

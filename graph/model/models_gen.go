@@ -3,7 +3,7 @@
 package model
 
 import (
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 )
 
 type BaseError interface {
@@ -20,9 +20,29 @@ type SignUpError interface {
 	IsSignUpError()
 }
 
-type VerifyUserTokenError interface {
-	IsVerifyUserTokenError()
+type VerifyCustomerTokenError interface {
+	IsVerifyCustomerTokenError()
 }
+
+type CustomerNotFoundError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (CustomerNotFoundError) IsBaseError()            {}
+func (this CustomerNotFoundError) GetMessage() string { return this.Message }
+func (this CustomerNotFoundError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (CustomerNotFoundError) IsGetLoginLinkError() {}
 
 type EmailTakenError struct {
 	Message string   `json:"message"`
@@ -115,7 +135,7 @@ func (this LinkExpiredError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (LinkExpiredError) IsVerifyUserTokenError() {}
+func (LinkExpiredError) IsVerifyCustomerTokenError() {}
 
 type Mutation struct {
 }
@@ -135,32 +155,12 @@ type SignUpPayload struct {
 	Errors []SignUpError `json:"errors"`
 }
 
-type UserNotFoundError struct {
-	Message string   `json:"message"`
-	Path    []string `json:"path,omitempty"`
-}
-
-func (UserNotFoundError) IsBaseError()            {}
-func (this UserNotFoundError) GetMessage() string { return this.Message }
-func (this UserNotFoundError) GetPath() []string {
-	if this.Path == nil {
-		return nil
-	}
-	interfaceSlice := make([]string, 0, len(this.Path))
-	for _, concrete := range this.Path {
-		interfaceSlice = append(interfaceSlice, concrete)
-	}
-	return interfaceSlice
-}
-
-func (UserNotFoundError) IsGetLoginLinkError() {}
-
-type VerifyUserTokenInput struct {
+type VerifyCustomerTokenInput struct {
 	Token string `json:"token"`
 }
 
-type VerifyUserTokenPayload struct {
-	User     *srvuser.User          `json:"user,omitempty"`
-	NewToken *string                `json:"newToken,omitempty"`
-	Errors   []VerifyUserTokenError `json:"errors"`
+type VerifyCustomerTokenPayload struct {
+	Customer *srvcustomer.Customer      `json:"customer,omitempty"`
+	NewToken *string                    `json:"newToken,omitempty"`
+	Errors   []VerifyCustomerTokenError `json:"errors"`
 }

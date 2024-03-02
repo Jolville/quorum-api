@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"quorum-api/graph/model"
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -49,6 +49,19 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Customer struct {
+		Email       func(childComplexity int) int
+		FirstName   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		LastName    func(childComplexity int) int
+		Profression func(childComplexity int) int
+	}
+
+	CustomerNotFoundError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	EmailTakenError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
@@ -74,46 +87,33 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		GetLoginLink    func(childComplexity int, input model.GetLoginLinkInput) int
-		SignUp          func(childComplexity int, input model.SignUpInput) int
-		VerifyUserToken func(childComplexity int, input model.VerifyUserTokenInput) int
+		GetLoginLink        func(childComplexity int, input model.GetLoginLinkInput) int
+		SignUp              func(childComplexity int, input model.SignUpInput) int
+		VerifyCustomerToken func(childComplexity int, input model.VerifyCustomerTokenInput) int
 	}
 
 	Query struct {
-		User func(childComplexity int) int
+		Customer func(childComplexity int) int
 	}
 
 	SignUpPayload struct {
 		Errors func(childComplexity int) int
 	}
 
-	User struct {
-		Email       func(childComplexity int) int
-		FirstName   func(childComplexity int) int
-		ID          func(childComplexity int) int
-		LastName    func(childComplexity int) int
-		Profression func(childComplexity int) int
-	}
-
-	UserNotFoundError struct {
-		Message func(childComplexity int) int
-		Path    func(childComplexity int) int
-	}
-
-	VerifyUserTokenPayload struct {
+	VerifyCustomerTokenPayload struct {
+		Customer func(childComplexity int) int
 		Errors   func(childComplexity int) int
 		NewToken func(childComplexity int) int
-		User     func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	SignUp(ctx context.Context, input model.SignUpInput) (*model.SignUpPayload, error)
 	GetLoginLink(ctx context.Context, input model.GetLoginLinkInput) (*model.GetLoginLinkPayload, error)
-	VerifyUserToken(ctx context.Context, input model.VerifyUserTokenInput) (*model.VerifyUserTokenPayload, error)
+	VerifyCustomerToken(ctx context.Context, input model.VerifyCustomerTokenInput) (*model.VerifyCustomerTokenPayload, error)
 }
 type QueryResolver interface {
-	User(ctx context.Context) (*srvuser.User, error)
+	Customer(ctx context.Context) (*srvcustomer.Customer, error)
 }
 
 type executableSchema struct {
@@ -134,6 +134,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Customer.email":
+		if e.complexity.Customer.Email == nil {
+			break
+		}
+
+		return e.complexity.Customer.Email(childComplexity), true
+
+	case "Customer.firstName":
+		if e.complexity.Customer.FirstName == nil {
+			break
+		}
+
+		return e.complexity.Customer.FirstName(childComplexity), true
+
+	case "Customer.id":
+		if e.complexity.Customer.ID == nil {
+			break
+		}
+
+		return e.complexity.Customer.ID(childComplexity), true
+
+	case "Customer.lastName":
+		if e.complexity.Customer.LastName == nil {
+			break
+		}
+
+		return e.complexity.Customer.LastName(childComplexity), true
+
+	case "Customer.profression":
+		if e.complexity.Customer.Profression == nil {
+			break
+		}
+
+		return e.complexity.Customer.Profression(childComplexity), true
+
+	case "CustomerNotFoundError.message":
+		if e.complexity.CustomerNotFoundError.Message == nil {
+			break
+		}
+
+		return e.complexity.CustomerNotFoundError.Message(childComplexity), true
+
+	case "CustomerNotFoundError.path":
+		if e.complexity.CustomerNotFoundError.Path == nil {
+			break
+		}
+
+		return e.complexity.CustomerNotFoundError.Path(childComplexity), true
 
 	case "EmailTakenError.message":
 		if e.complexity.EmailTakenError.Message == nil {
@@ -222,24 +271,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SignUp(childComplexity, args["input"].(model.SignUpInput)), true
 
-	case "Mutation.verifyUserToken":
-		if e.complexity.Mutation.VerifyUserToken == nil {
+	case "Mutation.verifyCustomerToken":
+		if e.complexity.Mutation.VerifyCustomerToken == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_verifyUserToken_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_verifyCustomerToken_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.VerifyUserToken(childComplexity, args["input"].(model.VerifyUserTokenInput)), true
+		return e.complexity.Mutation.VerifyCustomerToken(childComplexity, args["input"].(model.VerifyCustomerTokenInput)), true
 
-	case "Query.user":
-		if e.complexity.Query.User == nil {
+	case "Query.customer":
+		if e.complexity.Query.Customer == nil {
 			break
 		}
 
-		return e.complexity.Query.User(childComplexity), true
+		return e.complexity.Query.Customer(childComplexity), true
 
 	case "SignUpPayload.errors":
 		if e.complexity.SignUpPayload.Errors == nil {
@@ -248,75 +297,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SignUpPayload.Errors(childComplexity), true
 
-	case "User.email":
-		if e.complexity.User.Email == nil {
+	case "VerifyCustomerTokenPayload.customer":
+		if e.complexity.VerifyCustomerTokenPayload.Customer == nil {
 			break
 		}
 
-		return e.complexity.User.Email(childComplexity), true
+		return e.complexity.VerifyCustomerTokenPayload.Customer(childComplexity), true
 
-	case "User.firstName":
-		if e.complexity.User.FirstName == nil {
+	case "VerifyCustomerTokenPayload.errors":
+		if e.complexity.VerifyCustomerTokenPayload.Errors == nil {
 			break
 		}
 
-		return e.complexity.User.FirstName(childComplexity), true
+		return e.complexity.VerifyCustomerTokenPayload.Errors(childComplexity), true
 
-	case "User.id":
-		if e.complexity.User.ID == nil {
+	case "VerifyCustomerTokenPayload.newToken":
+		if e.complexity.VerifyCustomerTokenPayload.NewToken == nil {
 			break
 		}
 
-		return e.complexity.User.ID(childComplexity), true
-
-	case "User.lastName":
-		if e.complexity.User.LastName == nil {
-			break
-		}
-
-		return e.complexity.User.LastName(childComplexity), true
-
-	case "User.profression":
-		if e.complexity.User.Profression == nil {
-			break
-		}
-
-		return e.complexity.User.Profression(childComplexity), true
-
-	case "UserNotFoundError.message":
-		if e.complexity.UserNotFoundError.Message == nil {
-			break
-		}
-
-		return e.complexity.UserNotFoundError.Message(childComplexity), true
-
-	case "UserNotFoundError.path":
-		if e.complexity.UserNotFoundError.Path == nil {
-			break
-		}
-
-		return e.complexity.UserNotFoundError.Path(childComplexity), true
-
-	case "VerifyUserTokenPayload.errors":
-		if e.complexity.VerifyUserTokenPayload.Errors == nil {
-			break
-		}
-
-		return e.complexity.VerifyUserTokenPayload.Errors(childComplexity), true
-
-	case "VerifyUserTokenPayload.newToken":
-		if e.complexity.VerifyUserTokenPayload.NewToken == nil {
-			break
-		}
-
-		return e.complexity.VerifyUserTokenPayload.NewToken(childComplexity), true
-
-	case "VerifyUserTokenPayload.user":
-		if e.complexity.VerifyUserTokenPayload.User == nil {
-			break
-		}
-
-		return e.complexity.VerifyUserTokenPayload.User(childComplexity), true
+		return e.complexity.VerifyCustomerTokenPayload.NewToken(childComplexity), true
 
 	}
 	return 0, false
@@ -328,7 +328,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputGetLoginLinkInput,
 		ec.unmarshalInputSignUpInput,
-		ec.unmarshalInputVerifyUserTokenInput,
+		ec.unmarshalInputVerifyCustomerTokenInput,
 	)
 	first := true
 
@@ -475,13 +475,13 @@ func (ec *executionContext) field_Mutation_signUp_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_verifyUserToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_verifyCustomerToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.VerifyUserTokenInput
+	var arg0 model.VerifyCustomerTokenInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNVerifyUserTokenInput2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenInput(ctx, tmp)
+		arg0, err = ec.unmarshalNVerifyCustomerTokenInput2quorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -542,6 +542,311 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Customer_id(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Customer_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UUID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Customer_firstName(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_firstName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FirstName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Customer_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Customer_lastName(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_lastName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Customer_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Customer_email(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Customer_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Customer_profression(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_profression(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Profression, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Customer_profression(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CustomerNotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.CustomerNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CustomerNotFoundError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CustomerNotFoundError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CustomerNotFoundError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CustomerNotFoundError_path(ctx context.Context, field graphql.CollectedField, obj *model.CustomerNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CustomerNotFoundError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CustomerNotFoundError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CustomerNotFoundError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _EmailTakenError_message(ctx context.Context, field graphql.CollectedField, obj *model.EmailTakenError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_EmailTakenError_message(ctx, field)
@@ -1045,8 +1350,8 @@ func (ec *executionContext) fieldContext_Mutation_getLoginLink(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_verifyUserToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_verifyUserToken(ctx, field)
+func (ec *executionContext) _Mutation_verifyCustomerToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_verifyCustomerToken(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1059,7 +1364,7 @@ func (ec *executionContext) _Mutation_verifyUserToken(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VerifyUserToken(rctx, fc.Args["input"].(model.VerifyUserTokenInput))
+		return ec.resolvers.Mutation().VerifyCustomerToken(rctx, fc.Args["input"].(model.VerifyCustomerTokenInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1071,12 +1376,12 @@ func (ec *executionContext) _Mutation_verifyUserToken(ctx context.Context, field
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.VerifyUserTokenPayload)
+	res := resTmp.(*model.VerifyCustomerTokenPayload)
 	fc.Result = res
-	return ec.marshalNVerifyUserTokenPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenPayload(ctx, field.Selections, res)
+	return ec.marshalNVerifyCustomerTokenPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_verifyUserToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_verifyCustomerToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1084,14 +1389,14 @@ func (ec *executionContext) fieldContext_Mutation_verifyUserToken(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "user":
-				return ec.fieldContext_VerifyUserTokenPayload_user(ctx, field)
+			case "customer":
+				return ec.fieldContext_VerifyCustomerTokenPayload_customer(ctx, field)
 			case "newToken":
-				return ec.fieldContext_VerifyUserTokenPayload_newToken(ctx, field)
+				return ec.fieldContext_VerifyCustomerTokenPayload_newToken(ctx, field)
 			case "errors":
-				return ec.fieldContext_VerifyUserTokenPayload_errors(ctx, field)
+				return ec.fieldContext_VerifyCustomerTokenPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type VerifyUserTokenPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type VerifyCustomerTokenPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -1101,15 +1406,15 @@ func (ec *executionContext) fieldContext_Mutation_verifyUserToken(ctx context.Co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_verifyUserToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_verifyCustomerToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_user(ctx, field)
+func (ec *executionContext) _Query_customer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_customer(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1122,7 +1427,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx)
+		return ec.resolvers.Query().Customer(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1131,12 +1436,12 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*srvuser.User)
+	res := resTmp.(*srvcustomer.Customer)
 	fc.Result = res
-	return ec.marshalOUser2ᚖquorumᚑapiᚋservicesᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalOCustomer2ᚖquorumᚑapiᚋservicesᚋcustomerᚐCustomer(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_customer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1145,17 +1450,17 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+				return ec.fieldContext_Customer_id(ctx, field)
 			case "firstName":
-				return ec.fieldContext_User_firstName(ctx, field)
+				return ec.fieldContext_Customer_firstName(ctx, field)
 			case "lastName":
-				return ec.fieldContext_User_lastName(ctx, field)
+				return ec.fieldContext_Customer_lastName(ctx, field)
 			case "email":
-				return ec.fieldContext_User_email(ctx, field)
+				return ec.fieldContext_Customer_email(ctx, field)
 			case "profression":
-				return ec.fieldContext_User_profression(ctx, field)
+				return ec.fieldContext_Customer_profression(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Customer", field.Name)
 		},
 	}
 	return fc, nil
@@ -1334,8 +1639,8 @@ func (ec *executionContext) fieldContext_SignUpPayload_errors(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_id(ctx, field)
+func (ec *executionContext) _VerifyCustomerTokenPayload_customer(ctx context.Context, field graphql.CollectedField, obj *model.VerifyCustomerTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyCustomerTokenPayload_customer(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1348,271 +1653,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_firstName(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_firstName(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FirstName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_lastName(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.LastName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_email(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_profression(ctx context.Context, field graphql.CollectedField, obj *srvuser.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_profression(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Profression, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_profression(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _UserNotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.UserNotFoundError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UserNotFoundError_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_UserNotFoundError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "UserNotFoundError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _UserNotFoundError_path(ctx context.Context, field graphql.CollectedField, obj *model.UserNotFoundError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UserNotFoundError_path(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
+		return obj.Customer, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1621,79 +1662,38 @@ func (ec *executionContext) _UserNotFoundError_path(ctx context.Context, field g
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]string)
+	res := resTmp.(*srvcustomer.Customer)
 	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalOCustomer2ᚖquorumᚑapiᚋservicesᚋcustomerᚐCustomer(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserNotFoundError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_VerifyCustomerTokenPayload_customer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "UserNotFoundError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _VerifyUserTokenPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_VerifyUserTokenPayload_user(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*srvuser.User)
-	fc.Result = res
-	return ec.marshalOUser2ᚖquorumᚑapiᚋservicesᚋuserᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_VerifyUserTokenPayload_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "VerifyUserTokenPayload",
+		Object:     "VerifyCustomerTokenPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+				return ec.fieldContext_Customer_id(ctx, field)
 			case "firstName":
-				return ec.fieldContext_User_firstName(ctx, field)
+				return ec.fieldContext_Customer_firstName(ctx, field)
 			case "lastName":
-				return ec.fieldContext_User_lastName(ctx, field)
+				return ec.fieldContext_Customer_lastName(ctx, field)
 			case "email":
-				return ec.fieldContext_User_email(ctx, field)
+				return ec.fieldContext_Customer_email(ctx, field)
 			case "profression":
-				return ec.fieldContext_User_profression(ctx, field)
+				return ec.fieldContext_Customer_profression(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Customer", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _VerifyUserTokenPayload_newToken(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_VerifyUserTokenPayload_newToken(ctx, field)
+func (ec *executionContext) _VerifyCustomerTokenPayload_newToken(ctx context.Context, field graphql.CollectedField, obj *model.VerifyCustomerTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyCustomerTokenPayload_newToken(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1720,9 +1720,9 @@ func (ec *executionContext) _VerifyUserTokenPayload_newToken(ctx context.Context
 	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_VerifyUserTokenPayload_newToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_VerifyCustomerTokenPayload_newToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "VerifyUserTokenPayload",
+		Object:     "VerifyCustomerTokenPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -1733,8 +1733,8 @@ func (ec *executionContext) fieldContext_VerifyUserTokenPayload_newToken(ctx con
 	return fc, nil
 }
 
-func (ec *executionContext) _VerifyUserTokenPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_VerifyUserTokenPayload_errors(ctx, field)
+func (ec *executionContext) _VerifyCustomerTokenPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.VerifyCustomerTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyCustomerTokenPayload_errors(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1759,19 +1759,19 @@ func (ec *executionContext) _VerifyUserTokenPayload_errors(ctx context.Context, 
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.VerifyUserTokenError)
+	res := resTmp.([]model.VerifyCustomerTokenError)
 	fc.Result = res
-	return ec.marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenErrorᚄ(ctx, field.Selections, res)
+	return ec.marshalNVerifyCustomerTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenErrorᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_VerifyUserTokenPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_VerifyCustomerTokenPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "VerifyUserTokenPayload",
+		Object:     "VerifyCustomerTokenPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type VerifyUserTokenError does not have child fields")
+			return nil, errors.New("field of type VerifyCustomerTokenError does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3639,8 +3639,8 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj i
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputVerifyUserTokenInput(ctx context.Context, obj interface{}) (model.VerifyUserTokenInput, error) {
-	var it model.VerifyUserTokenInput
+func (ec *executionContext) unmarshalInputVerifyCustomerTokenInput(ctx context.Context, obj interface{}) (model.VerifyCustomerTokenInput, error) {
+	var it model.VerifyCustomerTokenInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3695,13 +3695,13 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._InvalidReturnToError(ctx, sel, obj)
-	case model.UserNotFoundError:
-		return ec._UserNotFoundError(ctx, sel, &obj)
-	case *model.UserNotFoundError:
+	case model.CustomerNotFoundError:
+		return ec._CustomerNotFoundError(ctx, sel, &obj)
+	case *model.CustomerNotFoundError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._UserNotFoundError(ctx, sel, obj)
+		return ec._CustomerNotFoundError(ctx, sel, obj)
 	case model.LinkExpiredError:
 		return ec._LinkExpiredError(ctx, sel, &obj)
 	case *model.LinkExpiredError:
@@ -3725,13 +3725,13 @@ func (ec *executionContext) _GetLoginLinkError(ctx context.Context, sel ast.Sele
 			return graphql.Null
 		}
 		return ec._InvalidEmailError(ctx, sel, obj)
-	case model.UserNotFoundError:
-		return ec._UserNotFoundError(ctx, sel, &obj)
-	case *model.UserNotFoundError:
+	case model.CustomerNotFoundError:
+		return ec._CustomerNotFoundError(ctx, sel, &obj)
+	case *model.CustomerNotFoundError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._UserNotFoundError(ctx, sel, obj)
+		return ec._CustomerNotFoundError(ctx, sel, obj)
 	case model.InvalidReturnToError:
 		return ec._InvalidReturnToError(ctx, sel, &obj)
 	case *model.InvalidReturnToError:
@@ -3774,7 +3774,7 @@ func (ec *executionContext) _SignUpError(ctx context.Context, sel ast.SelectionS
 	}
 }
 
-func (ec *executionContext) _VerifyUserTokenError(ctx context.Context, sel ast.SelectionSet, obj model.VerifyUserTokenError) graphql.Marshaler {
+func (ec *executionContext) _VerifyCustomerTokenError(ctx context.Context, sel ast.SelectionSet, obj model.VerifyCustomerTokenError) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
@@ -3793,6 +3793,106 @@ func (ec *executionContext) _VerifyUserTokenError(ctx context.Context, sel ast.S
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var customerImplementors = []string{"Customer"}
+
+func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet, obj *srvcustomer.Customer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, customerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Customer")
+		case "id":
+			out.Values[i] = ec._Customer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "firstName":
+			out.Values[i] = ec._Customer_firstName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastName":
+			out.Values[i] = ec._Customer_lastName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "email":
+			out.Values[i] = ec._Customer_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profression":
+			out.Values[i] = ec._Customer_profression(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var customerNotFoundErrorImplementors = []string{"CustomerNotFoundError", "BaseError", "GetLoginLinkError"}
+
+func (ec *executionContext) _CustomerNotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.CustomerNotFoundError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, customerNotFoundErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CustomerNotFoundError")
+		case "message":
+			out.Values[i] = ec._CustomerNotFoundError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._CustomerNotFoundError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var emailTakenErrorImplementors = []string{"EmailTakenError", "BaseError", "SignUpError"}
 
@@ -3956,7 +4056,7 @@ func (ec *executionContext) _InvalidReturnToError(ctx context.Context, sel ast.S
 	return out
 }
 
-var linkExpiredErrorImplementors = []string{"LinkExpiredError", "BaseError", "VerifyUserTokenError"}
+var linkExpiredErrorImplementors = []string{"LinkExpiredError", "BaseError", "VerifyCustomerTokenError"}
 
 func (ec *executionContext) _LinkExpiredError(ctx context.Context, sel ast.SelectionSet, obj *model.LinkExpiredError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, linkExpiredErrorImplementors)
@@ -4030,9 +4130,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "verifyUserToken":
+		case "verifyCustomerToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_verifyUserToken(ctx, field)
+				return ec._Mutation_verifyCustomerToken(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -4079,7 +4179,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "user":
+		case "customer":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -4088,7 +4188,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_user(ctx, field)
+				res = ec._Query_customer(ctx, field)
 				return res
 			}
 
@@ -4168,123 +4268,23 @@ func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.Selectio
 	return out
 }
 
-var userImplementors = []string{"User"}
+var verifyCustomerTokenPayloadImplementors = []string{"VerifyCustomerTokenPayload"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *srvuser.User) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "firstName":
-			out.Values[i] = ec._User_firstName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "lastName":
-			out.Values[i] = ec._User_lastName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "email":
-			out.Values[i] = ec._User_email(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "profression":
-			out.Values[i] = ec._User_profression(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var userNotFoundErrorImplementors = []string{"UserNotFoundError", "BaseError", "GetLoginLinkError"}
-
-func (ec *executionContext) _UserNotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.UserNotFoundError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, userNotFoundErrorImplementors)
+func (ec *executionContext) _VerifyCustomerTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.VerifyCustomerTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, verifyCustomerTokenPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("UserNotFoundError")
-		case "message":
-			out.Values[i] = ec._UserNotFoundError_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "path":
-			out.Values[i] = ec._UserNotFoundError_path(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var verifyUserTokenPayloadImplementors = []string{"VerifyUserTokenPayload"}
-
-func (ec *executionContext) _VerifyUserTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.VerifyUserTokenPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, verifyUserTokenPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("VerifyUserTokenPayload")
-		case "user":
-			out.Values[i] = ec._VerifyUserTokenPayload_user(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("VerifyCustomerTokenPayload")
+		case "customer":
+			out.Values[i] = ec._VerifyCustomerTokenPayload_customer(ctx, field, obj)
 		case "newToken":
-			out.Values[i] = ec._VerifyUserTokenPayload_newToken(ctx, field, obj)
+			out.Values[i] = ec._VerifyCustomerTokenPayload_newToken(ctx, field, obj)
 		case "errors":
-			out.Values[i] = ec._VerifyUserTokenPayload_errors(ctx, field, obj)
+			out.Values[i] = ec._VerifyCustomerTokenPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4828,17 +4828,17 @@ func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx
 	return res
 }
 
-func (ec *executionContext) marshalNVerifyUserTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenError(ctx context.Context, sel ast.SelectionSet, v model.VerifyUserTokenError) graphql.Marshaler {
+func (ec *executionContext) marshalNVerifyCustomerTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenError(ctx context.Context, sel ast.SelectionSet, v model.VerifyCustomerTokenError) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._VerifyUserTokenError(ctx, sel, v)
+	return ec._VerifyCustomerTokenError(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.VerifyUserTokenError) graphql.Marshaler {
+func (ec *executionContext) marshalNVerifyCustomerTokenError2ᚕquorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.VerifyCustomerTokenError) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4862,7 +4862,7 @@ func (ec *executionContext) marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraph
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNVerifyUserTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenError(ctx, sel, v[i])
+			ret[i] = ec.marshalNVerifyCustomerTokenError2quorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenError(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4882,23 +4882,23 @@ func (ec *executionContext) marshalNVerifyUserTokenError2ᚕquorumᚑapiᚋgraph
 	return ret
 }
 
-func (ec *executionContext) unmarshalNVerifyUserTokenInput2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenInput(ctx context.Context, v interface{}) (model.VerifyUserTokenInput, error) {
-	res, err := ec.unmarshalInputVerifyUserTokenInput(ctx, v)
+func (ec *executionContext) unmarshalNVerifyCustomerTokenInput2quorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenInput(ctx context.Context, v interface{}) (model.VerifyCustomerTokenInput, error) {
+	res, err := ec.unmarshalInputVerifyCustomerTokenInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNVerifyUserTokenPayload2quorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenPayload(ctx context.Context, sel ast.SelectionSet, v model.VerifyUserTokenPayload) graphql.Marshaler {
-	return ec._VerifyUserTokenPayload(ctx, sel, &v)
+func (ec *executionContext) marshalNVerifyCustomerTokenPayload2quorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenPayload(ctx context.Context, sel ast.SelectionSet, v model.VerifyCustomerTokenPayload) graphql.Marshaler {
+	return ec._VerifyCustomerTokenPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNVerifyUserTokenPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐVerifyUserTokenPayload(ctx context.Context, sel ast.SelectionSet, v *model.VerifyUserTokenPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNVerifyCustomerTokenPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐVerifyCustomerTokenPayload(ctx context.Context, sel ast.SelectionSet, v *model.VerifyCustomerTokenPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._VerifyUserTokenPayload(ctx, sel, v)
+	return ec._VerifyCustomerTokenPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -5180,6 +5180,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOCustomer2ᚖquorumᚑapiᚋservicesᚋcustomerᚐCustomer(ctx context.Context, sel ast.SelectionSet, v *srvcustomer.Customer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Customer(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -5248,13 +5255,6 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
-}
-
-func (ec *executionContext) marshalOUser2ᚖquorumᚑapiᚋservicesᚋuserᚐUser(ctx context.Context, sel ast.SelectionSet, v *srvuser.User) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

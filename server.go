@@ -6,7 +6,7 @@ import (
 	"os"
 	"quorum-api/database"
 	"quorum-api/graph"
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	services := graph.Services{
-		User: srvuser.New(db),
+		Customer: srvcustomer.New(db),
 	}
 
 	var srv http.Handler = handler.NewDefaultServer(

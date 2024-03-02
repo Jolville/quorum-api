@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"os"
 	"quorum-api/graph/model"
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 	"strings"
 	"time"
 
@@ -31,14 +31,14 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			},
 		}, nil
 	}
-	userID, err := r.Services.User.CreateUnverifiedUser(ctx,
-		srvuser.CreateUnverifiedUserRequest{
+	customerID, err := r.Services.Customer.CreateUnverifiedCustomer(ctx,
+		srvcustomer.CreateUnverifiedCustomerRequest{
 			Email:     input.Email,
 			FirstName: input.FirstName,
 			LastName:  input.LastName,
 		},
 	)
-	if err == srvuser.ErrEmailTaken {
+	if err == srvcustomer.ErrEmailTaken {
 		return &model.SignUpPayload{
 			Errors: []model.SignUpError{
 				&model.EmailTakenError{
@@ -48,7 +48,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			},
 		}, nil
 	}
-	if err == srvuser.ErrInvalidEmail {
+	if err == srvcustomer.ErrInvalidEmail {
 		return &model.SignUpPayload{
 			Errors: []model.SignUpError{
 				&model.EmailTakenError{
@@ -59,7 +59,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 		}, nil
 	}
 	if err != nil {
-		log.Printf("error creating unverified user: %v", err)
+		log.Printf("error creating unverified customer: %v", err)
 		return nil, fmt.Errorf("unexpected error occured")
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
@@ -68,7 +68,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Subject:   userID.String(),
+			Subject:   customerID.String(),
 		},
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
@@ -101,32 +101,32 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 		}, nil
 	}
 
-	users, err := r.Services.User.GetUsersByFilter(
-		ctx, srvuser.GetUsersByFilterRequest{
+	customers, err := r.Services.Customer.GetCustomersByFilter(
+		ctx, srvcustomer.GetCustomersByFilterRequest{
 			Emails: []string{input.Email},
 		},
 	)
 	if err != nil {
-		panic(fmt.Errorf("getting users: %v", err))
+		panic(fmt.Errorf("getting customers: %v", err))
 	}
-	if len(users) < 1 {
+	if len(customers) < 1 {
 		return &model.GetLoginLinkPayload{
 			Errors: []model.GetLoginLinkError{
-				&model.UserNotFoundError{
-					Message: "User not found, call signUp mutation",
+				&model.CustomerNotFoundError{
+					Message: "Customer not found, call signUp mutation",
 				},
 			},
 		}, nil
 	}
 
-	user := users[0]
+	customer := customers[0]
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 		IsVerified: false,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Subject:   user.ID.String(),
+			Subject:   customer.ID.String(),
 		},
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
@@ -146,18 +146,18 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	return &model.GetLoginLinkPayload{}, nil
 }
 
-// VerifyUserToken is the resolver for the verifyUserToken field.
-func (r *mutationResolver) VerifyUserToken(ctx context.Context, input model.VerifyUserTokenInput) (*model.VerifyUserTokenPayload, error) {
+// VerifyCustomerToken is the resolver for the verifyCustomerToken field.
+func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.VerifyCustomerTokenInput) (*model.VerifyCustomerTokenPayload, error) {
 	token, err := jwt.ParseWithClaims(
 		input.Token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(r.JWTSecret), nil
 		})
 	if err != nil {
 		if err == jwt.ErrTokenExpired {
-			return &model.VerifyUserTokenPayload{
-				Errors: []model.VerifyUserTokenError{
+			return &model.VerifyCustomerTokenPayload{
+				Errors: []model.VerifyCustomerTokenError{
 					&model.LinkExpiredError{
-						Message: "Link has expired, either call sign up (new users), or generate a new login link (existing users)",
+						Message: "Link has expired, either call sign up (new customers), or generate a new login link (existing customers)",
 					},
 				},
 			}, nil
@@ -167,18 +167,18 @@ func (r *mutationResolver) VerifyUserToken(ctx context.Context, input model.Veri
 		if claims.IsVerified {
 			panic("expected token to not be verified")
 		}
-		userID, err := uuid.Parse(claims.Subject)
+		customerID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			panic("expected userID to be a uuid")
+			panic("expected customerID to be a uuid")
 		}
-		r.Services.User.VerifyUser(ctx, userID)
+		r.Services.Customer.VerifyCustomer(ctx, customerID)
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 			IsVerified: true,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
-				Subject:   userID.String(),
+				Subject:   customerID.String(),
 			},
 		})
 		tokenString, err := token.SignedString([]byte(r.JWTSecret))
@@ -186,30 +186,30 @@ func (r *mutationResolver) VerifyUserToken(ctx context.Context, input model.Veri
 			log.Printf("error signing token: %v", err)
 			return nil, fmt.Errorf("unexpected error occured")
 		}
-		user, err := GetLoaders(ctx).UserLoader.Load(ctx, userID)
+		customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, customerID)
 		if err != nil {
-			log.Printf("loading user: %v", err)
+			log.Printf("loading customer: %v", err)
 			return nil, fmt.Errorf("unexpected error occured")
 		}
-		return &model.VerifyUserTokenPayload{
+		return &model.VerifyCustomerTokenPayload{
 			NewToken: &tokenString,
-			User:     &user,
+			Customer: &customer,
 		}, nil
 	}
 	panic(fmt.Errorf("unknown claims type, cannot proceed"))
 }
 
-// User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context) (*srvuser.User, error) {
-	verifiedUser := GetVerifiedUser(ctx)
-	if !verifiedUser.Valid {
+// Customer is the resolver for the customer field.
+func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, error) {
+	verifiedCustomer := GetVerifiedCustomer(ctx)
+	if !verifiedCustomer.Valid {
 		return nil, nil
 	}
-	user, err := GetLoaders(ctx).UserLoader.Load(ctx, verifiedUser.UUID)
+	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, verifiedCustomer.UUID)
 	if err != nil {
-		return nil, fmt.Errorf("getting user: %w", err)
+		return nil, fmt.Errorf("getting customer: %w", err)
 	}
-	return &user, nil
+	return &customer, nil
 }
 
 // Mutation returns MutationResolver implementation.

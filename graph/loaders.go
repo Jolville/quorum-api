@@ -3,7 +3,7 @@ package graph
 import (
 	"context"
 	"net/http"
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ type loadersCtxKey struct{}
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
-	UserLoader *dataloadgen.Loader[uuid.UUID, srvuser.User]
+	CustomerLoader *dataloadgen.Loader[uuid.UUID, srvcustomer.Customer]
 }
 
 type getters struct {
@@ -24,8 +24,8 @@ type getters struct {
 func NewLoaders(services Services) *Loaders {
 	getters := getters{services: services}
 	return &Loaders{
-		UserLoader: dataloadgen.NewLoader(
-			getters.getUsers, dataloadgen.WithWait(time.Millisecond),
+		CustomerLoader: dataloadgen.NewLoader(
+			getters.getCustomers, dataloadgen.WithWait(time.Millisecond),
 		),
 	}
 }
@@ -39,18 +39,18 @@ func LoadersMiddleware(services Services, next http.Handler) http.Handler {
 	})
 }
 
-func (g *getters) getUsers(
-	ctx context.Context, userIDs []uuid.UUID,
-) ([]srvuser.User, []error) {
-	users, err := g.services.User.GetUsersByFilter(
-		ctx, srvuser.GetUsersByFilterRequest{
-			IDs: userIDs,
+func (g *getters) getCustomers(
+	ctx context.Context, customerIDs []uuid.UUID,
+) ([]srvcustomer.Customer, []error) {
+	customers, err := g.services.Customer.GetCustomersByFilter(
+		ctx, srvcustomer.GetCustomersByFilterRequest{
+			IDs: customerIDs,
 		},
 	)
 	if err != nil {
 		return nil, []error{err}
 	}
-	return users, nil
+	return customers, nil
 }
 
 func GetLoaders(ctx context.Context) *Loaders {

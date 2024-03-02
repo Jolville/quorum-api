@@ -2,7 +2,7 @@ scalar UUID
 
 scalar Time
 
-type User {
+type Customer {
   id: UUID!
   firstName: String!
   lastName: String!
@@ -11,7 +11,7 @@ type User {
 }
 
 type Query {
-  user: User
+  customer: Customer
 }
 
 input SignUpInput {
@@ -57,21 +57,21 @@ input GetLoginLinkInput {
   returnTo: String!
 }
 
-type UserNotFoundError implements BaseError {
+type CustomerNotFoundError implements BaseError {
   message: String!
   path: [String!]
 }
 
 union GetLoginLinkError =
     InvalidEmailError
-  | UserNotFoundError
+  | CustomerNotFoundError
   | InvalidReturnToError
 
 type GetLoginLinkPayload {
   errors: [GetLoginLinkError!]!
 }
 
-input VerifyUserTokenInput {
+input VerifyCustomerTokenInput {
   token: String!
 }
 
@@ -80,16 +80,18 @@ type LinkExpiredError implements BaseError {
   path: [String!]
 }
 
-union VerifyUserTokenError = LinkExpiredError
+union VerifyCustomerTokenError = LinkExpiredError
 
-type VerifyUserTokenPayload {
-  user: User
+type VerifyCustomerTokenPayload {
+  customer: Customer
   newToken: ID
-  errors: [VerifyUserTokenError!]!
+  errors: [VerifyCustomerTokenError!]!
 }
 
 type Mutation {
   signUp(input: SignUpInput!): SignUpPayload!
   getLoginLink(input: GetLoginLinkInput!): GetLoginLinkPayload!
-  verifyUserToken(input: VerifyUserTokenInput!): VerifyUserTokenPayload!
+  verifyCustomerToken(
+    input: VerifyCustomerTokenInput!
+  ): VerifyCustomerTokenPayload!
 }

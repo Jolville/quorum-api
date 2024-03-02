@@ -1,22 +1,22 @@
 begin;
 
-create table unverified_user (
+create table unverified_customer (
     id uuid primary key,
     email text not null,
     first_name text not null,
     last_name text not null,
     created_at timestamptz not null default now(),
-    user_profression varchar(64) not null
+    profression varchar(64) not null
 );
 
-create unique index idx_unverified_user_email on unverified_user(email);
+create unique index idx_unverified_customer_email on unverified_customer(email);
 
-create table "user" (
+create table customer (
     id uuid primary key,
     email text not null,
     first_name text not null,
     last_name text not null,
-    user_profression varchar(64) not null,
+    profression varchar(64) not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     deleted_at timestamptz not null default now()

@@ -1,4 +1,4 @@
-package srvuser
+package srvcustomer
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"quorum-api/database"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 )
 
@@ -17,12 +18,12 @@ const (
 	DBLockForUpdate   DBLock = "for update"
 )
 
-type getUsersByFilterParams struct {
+type getCustomersByFilterParams struct {
 	IDs    database.UUIDSlice
 	Emails []string
 }
 
-type user struct {
+type customer struct {
 	ID          uuid.UUID
 	Email       string
 	FirstName   string
@@ -30,16 +31,16 @@ type user struct {
 	Profression string
 }
 
-func getUsersByFilter(
+func getCustomersByFilter(
 	ctx context.Context,
 	db database.Q,
-	params getUsersByFilterParams,
+	params getCustomersByFilterParams,
 	dbLock DBLock,
-) ([]user, error) {
-	users := []user{}
+) ([]customer, error) {
+	customers := []customer{}
 	query := `
 		select id, email, first_name, last_name, profression
-		from user
+		from verified_customer
 		where deleted_at is null
 	`
 
@@ -53,28 +54,30 @@ func getUsersByFilter(
 		query += " and id = any($1)"
 	}
 
-	query += fmt.Sprintf("%s %s", query, dbLock)
+	query = fmt.Sprintf("%s %s", query, dbLock)
 
-	if err := db.SelectContext(ctx, &users, query, args...); err != nil {
-		return nil, fmt.Errorf("selecting users: %w", err)
+	spew.Dump(query)
+
+	if err := db.SelectContext(ctx, &customers, query, args...); err != nil {
+		return nil, fmt.Errorf("selecting customers: %w", err)
 	}
 
-	return users, nil
+	return customers, nil
 }
 
-type upsertUnverifiedUserParams struct {
+type upsertUnverifiedCustomerParams struct {
 	Email       string
 	FirstName   string
 	LastName    string
 	Profression string
 }
 
-func upsertUnverifiedUser(
-	ctx context.Context, q database.Q, params upsertUnverifiedUserParams,
+func upsertUnverifiedCustomer(
+	ctx context.Context, q database.Q, params upsertUnverifiedCustomerParams,
 ) (uuid.UUID, error) {
-	userID := uuid.UUID{}
-	if err := q.SelectContext(ctx, &userID, `
-		insert into unverified_user (
+	customerID := uuid.UUID{}
+	if err := q.SelectContext(ctx, &customerID, `
+		insert into unverified_customer (
 			id, email, first_name, last_name, profression
 		) values ($1, $2, $3, $4, $5)
 		on conflict email do update set
@@ -90,24 +93,24 @@ func upsertUnverifiedUser(
 		params.LastName,
 		params.Profression,
 	); err != nil {
-		return uuid.Nil, fmt.Errorf("inserting into unverified_user: %w", err)
+		return uuid.Nil, fmt.Errorf("inserting into unverified_customer: %w", err)
 	}
-	return userID, nil
+	return customerID, nil
 }
 
-type upsertUserParams struct {
+type upsertCustomerParams struct {
 	Email       string
 	FirstName   string
 	LastName    string
 	Profression string
 }
 
-func upsertUser(
-	ctx context.Context, q database.Q, params upsertUserParams,
+func upsertCustomer(
+	ctx context.Context, q database.Q, params upsertCustomerParams,
 ) (uuid.UUID, error) {
-	userID := uuid.UUID{}
-	if err := q.SelectContext(ctx, &userID, `
-		insert into user (
+	customerID := uuid.UUID{}
+	if err := q.SelectContext(ctx, &customerID, `
+		insert into verified_customer (
 			id, email, first_name, last_name, profression
 		) values ($1, $2, $3, $4, $5)
 		on conflict email do update set
@@ -123,26 +126,26 @@ func upsertUser(
 		params.LastName,
 		params.Profression,
 	); err != nil {
-		return uuid.Nil, fmt.Errorf("inserting into unverified_user: %w", err)
+		return uuid.Nil, fmt.Errorf("inserting into unverified_customer: %w", err)
 	}
-	return userID, nil
+	return customerID, nil
 }
 
-var errNoUnverifiedUser = errors.New("no unverified user found")
+var errNoUnverifiedCustomer = errors.New("no unverified customer found")
 
-func deleteUnverifiedUser(
+func deleteUnverifiedCustomer(
 	ctx context.Context, q database.Q, id uuid.UUID,
-) (*user, error) {
-	user := user{}
-	if err := q.GetContext(ctx, &user, `
-		update unverified_user set deleted_at = now() where id = $1
+) (*customer, error) {
+	customer := customer{}
+	if err := q.GetContext(ctx, &customer, `
+		update unverified_customer set deleted_at = now() where id = $1
 		returning id, email, first_name, last_name, profression
 	`, id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errNoUnverifiedUser
+			return nil, errNoUnverifiedCustomer
 		}
-		return nil, fmt.Errorf("updating unverified_user: %w", err)
+		return nil, fmt.Errorf("updating unverified_customer: %w", err)
 	}
 
-	return &user, nil
+	return &customer, nil
 }

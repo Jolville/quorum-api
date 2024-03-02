@@ -88,5 +88,5 @@ models:
   UUID:
     model:
       - github.com/99designs/gqlgen/graphql.UUID
-  User:
-    model: quorum-api/services/user.User
+  Customer:
+    model: quorum-api/services/customer.Customer

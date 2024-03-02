@@ -3,14 +3,14 @@
 package graph
 
 import (
-	srvuser "quorum-api/services/user"
+	srvcustomer "quorum-api/services/customer"
 )
 
-type Resolver struct{
+type Resolver struct {
 	JWTSecret string
-	Services Services
+	Services  Services
 }
 
 type Services struct {
-	User srvuser.SRVUser
+	Customer srvcustomer.SRVCustomer
 }
