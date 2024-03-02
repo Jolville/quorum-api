@@ -60,6 +60,7 @@ func main() {
 		),
 	)
 
+	srv = AddAccessControlHeaders(srv)
 	srv = graph.LoadersMiddleware(services, srv)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
@@ -67,4 +68,12 @@ func main() {
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func AddAccessControlHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		next.ServeHTTP(w, r)
+	})
 }
