@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -65,7 +66,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 		IsVerified: false,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Subject:   customerID.String(),
@@ -123,7 +124,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 		IsVerified: false,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Subject:   customer.ID.String(),
@@ -149,11 +150,11 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 // VerifyCustomerToken is the resolver for the verifyCustomerToken field.
 func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.VerifyCustomerTokenInput) (*model.VerifyCustomerTokenPayload, error) {
 	token, err := jwt.ParseWithClaims(
-		input.Token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		input.Token, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(r.JWTSecret), nil
 		})
 	if err != nil {
-		if err == jwt.ErrTokenExpired {
+		if errors.Is(err, jwt.ErrTokenExpired) {
 			return &model.VerifyCustomerTokenPayload{
 				Errors: []model.VerifyCustomerTokenError{
 					&model.LinkExpiredError{
@@ -171,7 +172,9 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 		if err != nil {
 			panic("expected customerID to be a uuid")
 		}
-		r.Services.Customer.VerifyCustomer(ctx, customerID)
+		if err = r.Services.Customer.VerifyCustomer(ctx, customerID); err != nil {
+			panic(fmt.Errorf("verifying customer: %v", err))
+		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 			IsVerified: true,
 			RegisteredClaims: jwt.RegisteredClaims{

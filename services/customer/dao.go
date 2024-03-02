@@ -19,17 +19,18 @@ const (
 
 type getCustomersByFilterParams struct {
 	IDs    database.UUIDSlice
-	Emails []string
+	Emails database.EmailSlice
 }
 
 type customer struct {
-	ID          uuid.UUID `db:"id"`
-	Email       string    `db:"email"`
-	FirstName   string    `db:"first_name"`
-	LastName    string    `db:"last_name"`
-	Profression string    `db:"profression"`
+	ID         uuid.UUID `db:"id"`
+	Email      string    `db:"email"`
+	FirstName  string    `db:"first_name"`
+	LastName   string    `db:"last_name"`
+	Profession string    `db:"profession"`
 }
 
+// TODO fix this
 func getCustomersByFilter(
 	ctx context.Context,
 	db database.Q,
@@ -38,7 +39,7 @@ func getCustomersByFilter(
 ) ([]customer, error) {
 	customers := []customer{}
 	query := `
-		select id, email, first_name, last_name, profression
+		select id, email, first_name, last_name, profession
 		from customer
 		where deleted_at is null
 	`
@@ -46,11 +47,11 @@ func getCustomersByFilter(
 	args := []any{}
 	if len(params.Emails) > 0 {
 		args = append(args, params.Emails)
-		query += " and email = any($1)"
+		query = fmt.Sprintf("%s and email = any($%v)", query, len(args))
 	}
 	if len(params.IDs) > 0 {
-		args = append(args, params.IDs)
-		query += " and id = any($1)"
+		args = append(args, params.IDs.Slice())
+		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
 	}
 
 	query = fmt.Sprintf("%s %s", query, dbLock)
@@ -63,10 +64,10 @@ func getCustomersByFilter(
 }
 
 type upsertUnverifiedCustomerParams struct {
-	Email       string
-	FirstName   string
-	LastName    string
-	Profression string
+	Email      string
+	FirstName  string
+	LastName   string
+	Profession string
 }
 
 func upsertUnverifiedCustomer(
@@ -75,19 +76,19 @@ func upsertUnverifiedCustomer(
 	customerID := uuid.UUID{}
 	if err := q.GetContext(ctx, &customerID, `
 		insert into unverified_customer (
-			id, email, first_name, last_name, profression
+			id, email, first_name, last_name, profession
 		) values ($1, $2, $3, $4, $5)
 		on conflict (email) do update set
 			first_name = $3,
 			last_name = $4,
-			profression = $5
+			profession = $5
 		returning id
 		`,
 		uuid.New(),
 		params.Email,
 		params.FirstName,
 		params.LastName,
-		params.Profression,
+		params.Profession,
 	); err != nil {
 		return uuid.Nil, fmt.Errorf("inserting into unverified_customer: %w", err)
 	}
@@ -95,47 +96,45 @@ func upsertUnverifiedCustomer(
 }
 
 type upsertCustomerParams struct {
-	Email       string
-	FirstName   string
-	LastName    string
-	Profression string
+	ID         uuid.UUID
+	Email      string
+	FirstName  string
+	LastName   string
+	Profession string
 }
 
 func upsertCustomer(
 	ctx context.Context, q database.Q, params upsertCustomerParams,
-) (uuid.UUID, error) {
-	customerID := uuid.UUID{}
-	if err := q.GetContext(ctx, &customerID, `
-		insert into verified_customer (
-			id, email, first_name, last_name, profression
+) error {
+	if _, err := q.ExecContext(ctx, `
+		insert into customer (
+			id, email, first_name, last_name, profession
 		) values ($1, $2, $3, $4, $5)
-		on conflict (email) do update set
+		on conflict (id) do update set
 			first_name = $3,
 			last_name = $4,
-			profression = $5,
+			profession = $5,
 			updated_at = now()
-		returning id
 		`,
-		uuid.New(),
+		params.ID,
 		params.Email,
 		params.FirstName,
 		params.LastName,
-		params.Profression,
+		params.Profession,
 	); err != nil {
-		return uuid.Nil, fmt.Errorf("inserting into unverified_customer: %w", err)
+		return fmt.Errorf("inserting into customer: %w", err)
 	}
-	return customerID, nil
+	return nil
 }
 
 var errNoUnverifiedCustomer = errors.New("no unverified customer found")
 
-func deleteUnverifiedCustomer(
+func getUnverifiedCustomer(
 	ctx context.Context, q database.Q, id uuid.UUID,
 ) (*customer, error) {
 	customer := customer{}
 	if err := q.GetContext(ctx, &customer, `
-		update unverified_customer set deleted_at = now() where id = $1
-		returning id, email, first_name, last_name, profression
+		select email, first_name, last_name, profession from unverified_customer where id = $1
 	`, id); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errNoUnverifiedCustomer

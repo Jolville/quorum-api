@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"quorum-api/database"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -13,7 +14,7 @@ import (
 type SRVCustomer interface {
 	GetCustomersByFilter(ctx context.Context, request GetCustomersByFilterRequest) ([]Customer, error)
 	CreateUnverifiedCustomer(ctx context.Context, request CreateUnverifiedCustomerRequest) (uuid.UUID, error)
-	VerifyCustomer(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	VerifyCustomer(ctx context.Context, id uuid.UUID) error
 }
 
 type GetCustomersByFilterRequest struct {
@@ -22,23 +23,23 @@ type GetCustomersByFilterRequest struct {
 }
 
 type Customer struct {
-	ID          uuid.UUID
-	Email       string
-	FirstName   string
-	LastName    string
-	Profression string
+	ID         uuid.UUID
+	Email      string
+	FirstName  string
+	LastName   string
+	Profession string
 }
 
 type CreateUnverifiedCustomerRequest struct {
-	Email       string
-	FirstName   string
-	LastName    string
-	Profression string
+	Email      string
+	FirstName  string
+	LastName   string
+	Profession string
 }
 
 var ErrEmailTaken = errors.New("another verified customer exists with that email")
 var ErrInvalidEmail = errors.New("email string format is invalid")
-var ErrCustomerNotFound = errors.New("no verified customer exists")
+var ErrCustomerNotFound = errors.New("no customer exists")
 
 func New(db *sqlx.DB) SRVCustomer {
 	return &srv{
@@ -52,8 +53,8 @@ type srv struct {
 
 func (s *srv) GetCustomersByFilter(ctx context.Context, request GetCustomersByFilterRequest) ([]Customer, error) {
 	customers, err := getCustomersByFilter(ctx, s.db, getCustomersByFilterParams{
-		IDs:    request.IDs,
-		Emails: request.Emails,
+		IDs:    database.UUIDSlice(request.IDs),
+		Emails: database.EmailSlice(request.Emails),
 	}, DBLockUnspecified)
 	if err != nil {
 		return nil, fmt.Errorf("getting customers: %w", err)
@@ -99,10 +100,10 @@ func (s *srv) CreateUnverifiedCustomer(ctx context.Context, request CreateUnveri
 	return customerID, nil
 }
 
-func (s *srv) VerifyCustomer(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+func (s *srv) VerifyCustomer(ctx context.Context, id uuid.UUID) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("beginning tx: %w", err)
+		return fmt.Errorf("beginning tx: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -110,33 +111,33 @@ func (s *srv) VerifyCustomer(ctx context.Context, id uuid.UUID) (uuid.UUID, erro
 		IDs: []uuid.UUID{id},
 	}, DBLockForUpdate)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("getting customers: %w", err)
+		return fmt.Errorf("getting customers: %w", err)
 	}
 	if len(customers) > 0 {
-		return id, nil
+		return nil
 	}
 
-	customer, err := deleteUnverifiedCustomer(ctx, tx, id)
+	customer, err := getUnverifiedCustomer(ctx, tx, id)
 	if err != nil {
 		if err == errNoUnverifiedCustomer {
-			return uuid.Nil, ErrCustomerNotFound
+			return ErrCustomerNotFound
 		}
-		return uuid.Nil, fmt.Errorf("deleting unverified customer: %w", err)
+		return fmt.Errorf("deleting unverified customer: %w", err)
 	}
 
-	customerID, err := upsertCustomer(ctx, tx, upsertCustomerParams{
-		Email:       customer.Email,
-		FirstName:   customer.FirstName,
-		LastName:    customer.LastName,
-		Profression: customer.Profression,
-	})
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("upserting customer: %w", err)
+	if err = upsertCustomer(ctx, tx, upsertCustomerParams{
+		ID:         customer.ID,
+		Email:      customer.Email,
+		FirstName:  customer.FirstName,
+		LastName:   customer.LastName,
+		Profession: customer.Profession,
+	}); err != nil {
+		return fmt.Errorf("upserting customer: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return uuid.Nil, fmt.Errorf("committing tx: %w", err)
+		return fmt.Errorf("committing tx: %w", err)
 	}
 
-	return customerID, nil
+	return nil
 }

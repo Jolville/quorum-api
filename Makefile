@@ -26,6 +26,6 @@ dbdown:
 migration:
 	migrate create -ext ".sql" -dir migrations $(name)
 
-.PHONY: migrate # direction "up"|"down"
+.PHONY: migrate # d (direction) == "up"|"down"
 migrate:
-	migrate -source file://migrations -database postgres://postgres:jesse@localhost:5432/quorum?sslmode=disable $(direction)
+	migrate -source file://migrations -database postgres://postgres:jesse@localhost:5432/quorum?sslmode=disable $(d)

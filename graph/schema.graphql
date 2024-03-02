@@ -7,7 +7,7 @@ type Customer {
   firstName: String!
   lastName: String!
   email: String!
-  profression: String!
+  profession: String!
 }
 
 type Query {

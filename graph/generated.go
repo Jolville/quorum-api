@@ -54,7 +54,7 @@ type ComplexityRoot struct {
 		FirstName   func(childComplexity int) int
 		ID          func(childComplexity int) int
 		LastName    func(childComplexity int) int
-		Profression func(childComplexity int) int
+		Profession func(childComplexity int) int
 	}
 
 	CustomerNotFoundError struct {
@@ -163,12 +163,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Customer.LastName(childComplexity), true
 
-	case "Customer.profression":
-		if e.complexity.Customer.Profression == nil {
+	case "Customer.profession":
+		if e.complexity.Customer.Profession == nil {
 			break
 		}
 
-		return e.complexity.Customer.Profression(childComplexity), true
+		return e.complexity.Customer.Profession(childComplexity), true
 
 	case "CustomerNotFoundError.message":
 		if e.complexity.CustomerNotFoundError.Message == nil {
@@ -719,8 +719,8 @@ func (ec *executionContext) fieldContext_Customer_email(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Customer_profression(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Customer_profression(ctx, field)
+func (ec *executionContext) _Customer_profession(ctx context.Context, field graphql.CollectedField, obj *srvcustomer.Customer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Customer_profession(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -733,7 +733,7 @@ func (ec *executionContext) _Customer_profression(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Profression, nil
+		return obj.Profession, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -750,7 +750,7 @@ func (ec *executionContext) _Customer_profression(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Customer_profression(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Customer_profession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Customer",
 		Field:      field,
@@ -1457,8 +1457,8 @@ func (ec *executionContext) fieldContext_Query_customer(ctx context.Context, fie
 				return ec.fieldContext_Customer_lastName(ctx, field)
 			case "email":
 				return ec.fieldContext_Customer_email(ctx, field)
-			case "profression":
-				return ec.fieldContext_Customer_profression(ctx, field)
+			case "profession":
+				return ec.fieldContext_Customer_profession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Customer", field.Name)
 		},
@@ -1683,8 +1683,8 @@ func (ec *executionContext) fieldContext_VerifyCustomerTokenPayload_customer(ctx
 				return ec.fieldContext_Customer_lastName(ctx, field)
 			case "email":
 				return ec.fieldContext_Customer_email(ctx, field)
-			case "profression":
-				return ec.fieldContext_Customer_profression(ctx, field)
+			case "profession":
+				return ec.fieldContext_Customer_profession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Customer", field.Name)
 		},
@@ -3825,8 +3825,8 @@ func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "profression":
-			out.Values[i] = ec._Customer_profression(ctx, field, obj)
+		case "profession":
+			out.Values[i] = ec._Customer_profession(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
