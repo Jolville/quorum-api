@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"quorum-api/database"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 )
 
@@ -24,11 +23,11 @@ type getCustomersByFilterParams struct {
 }
 
 type customer struct {
-	ID          uuid.UUID
-	Email       string
-	FirstName   string
-	LastName    string
-	Profression string
+	ID          uuid.UUID `db:"id"`
+	Email       string    `db:"email"`
+	FirstName   string    `db:"first_name"`
+	LastName    string    `db:"last_name"`
+	Profression string    `db:"profression"`
 }
 
 func getCustomersByFilter(
@@ -40,7 +39,7 @@ func getCustomersByFilter(
 	customers := []customer{}
 	query := `
 		select id, email, first_name, last_name, profression
-		from verified_customer
+		from customer
 		where deleted_at is null
 	`
 
@@ -55,8 +54,6 @@ func getCustomersByFilter(
 	}
 
 	query = fmt.Sprintf("%s %s", query, dbLock)
-
-	spew.Dump(query)
 
 	if err := db.SelectContext(ctx, &customers, query, args...); err != nil {
 		return nil, fmt.Errorf("selecting customers: %w", err)
@@ -76,15 +73,14 @@ func upsertUnverifiedCustomer(
 	ctx context.Context, q database.Q, params upsertUnverifiedCustomerParams,
 ) (uuid.UUID, error) {
 	customerID := uuid.UUID{}
-	if err := q.SelectContext(ctx, &customerID, `
+	if err := q.GetContext(ctx, &customerID, `
 		insert into unverified_customer (
 			id, email, first_name, last_name, profression
 		) values ($1, $2, $3, $4, $5)
-		on conflict email do update set
+		on conflict (email) do update set
 			first_name = $3,
 			last_name = $4,
-			profression = $5,
-			updated_at = now()
+			profression = $5
 		returning id
 		`,
 		uuid.New(),
@@ -109,11 +105,11 @@ func upsertCustomer(
 	ctx context.Context, q database.Q, params upsertCustomerParams,
 ) (uuid.UUID, error) {
 	customerID := uuid.UUID{}
-	if err := q.SelectContext(ctx, &customerID, `
+	if err := q.GetContext(ctx, &customerID, `
 		insert into verified_customer (
 			id, email, first_name, last_name, profression
 		) values ($1, $2, $3, $4, $5)
-		on conflict email do update set
+		on conflict (email) do update set
 			first_name = $3,
 			last_name = $4,
 			profression = $5,
