@@ -34,32 +34,40 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	}
 	customerID, err := r.Services.Customer.CreateUnverifiedCustomer(ctx,
 		srvcustomer.CreateUnverifiedCustomerRequest{
-			Email:     input.Email,
-			FirstName: input.FirstName,
-			LastName:  input.LastName,
+			Email:      input.Email,
+			FirstName:  &input.FirstName,
+			LastName:   &input.LastName,
+			Profession: &input.Profession,
 		},
 	)
-	if err == srvcustomer.ErrEmailTaken {
-		return &model.SignUpPayload{
-			Errors: []model.SignUpError{
-				&model.EmailTakenError{
-					Message: "Email already in use.",
-					Path:    []string{"input", "email"},
-				},
+	switch err {
+	case nil:
+		// continue
+	case srvcustomer.ErrEmailTaken:
+		customers, err := r.Services.Customer.GetCustomersByFilter(ctx,
+			srvcustomer.GetCustomersByFilterRequest{
+				Emails: []string{strings.ToLower(input.Email)},
 			},
-		}, nil
-	}
-	if err == srvcustomer.ErrInvalidEmail {
+		)
+		if err != nil {
+			log.Printf("error getting customers: %v", err)
+			return nil, fmt.Errorf("unexpected error occured")
+		}
+		if len(customers) != 1 {
+			log.Printf("expected 1 customer")
+			return nil, fmt.Errorf("unexpected error occured")
+		}
+		customerID = customers[0].ID
+	case srvcustomer.ErrInvalidEmail:
 		return &model.SignUpPayload{
 			Errors: []model.SignUpError{
-				&model.EmailTakenError{
+				&model.InvalidEmailError{
 					Message: "Invalid format for email.",
 					Path:    []string{"input", "email"},
 				},
 			},
 		}, nil
-	}
-	if err != nil {
+	default:
 		log.Printf("error creating unverified customer: %v", err)
 		return nil, fmt.Errorf("unexpected error occured")
 	}

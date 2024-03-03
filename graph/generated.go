@@ -50,19 +50,14 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Customer struct {
-		Email       func(childComplexity int) int
-		FirstName   func(childComplexity int) int
-		ID          func(childComplexity int) int
-		LastName    func(childComplexity int) int
+		Email      func(childComplexity int) int
+		FirstName  func(childComplexity int) int
+		ID         func(childComplexity int) int
+		LastName   func(childComplexity int) int
 		Profession func(childComplexity int) int
 	}
 
 	CustomerNotFoundError struct {
-		Message func(childComplexity int) int
-		Path    func(childComplexity int) int
-	}
-
-	EmailTakenError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
@@ -183,20 +178,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CustomerNotFoundError.Path(childComplexity), true
-
-	case "EmailTakenError.message":
-		if e.complexity.EmailTakenError.Message == nil {
-			break
-		}
-
-		return e.complexity.EmailTakenError.Message(childComplexity), true
-
-	case "EmailTakenError.path":
-		if e.complexity.EmailTakenError.Path == nil {
-			break
-		}
-
-		return e.complexity.EmailTakenError.Path(childComplexity), true
 
 	case "GetLoginLinkPayload.errors":
 		if e.complexity.GetLoginLinkPayload.Errors == nil {
@@ -608,14 +589,11 @@ func (ec *executionContext) _Customer_firstName(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Customer_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -652,14 +630,11 @@ func (ec *executionContext) _Customer_lastName(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Customer_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -740,14 +715,11 @@ func (ec *executionContext) _Customer_profession(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Customer_profession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -838,91 +810,6 @@ func (ec *executionContext) _CustomerNotFoundError_path(ctx context.Context, fie
 func (ec *executionContext) fieldContext_CustomerNotFoundError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CustomerNotFoundError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _EmailTakenError_message(ctx context.Context, field graphql.CollectedField, obj *model.EmailTakenError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EmailTakenError_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_EmailTakenError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "EmailTakenError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _EmailTakenError_path(ctx context.Context, field graphql.CollectedField, obj *model.EmailTakenError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EmailTakenError_path(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_EmailTakenError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "EmailTakenError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3674,13 +3561,6 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.EmailTakenError:
-		return ec._EmailTakenError(ctx, sel, &obj)
-	case *model.EmailTakenError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._EmailTakenError(ctx, sel, obj)
 	case model.InvalidEmailError:
 		return ec._InvalidEmailError(ctx, sel, &obj)
 	case *model.InvalidEmailError:
@@ -3748,13 +3628,6 @@ func (ec *executionContext) _SignUpError(ctx context.Context, sel ast.SelectionS
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.EmailTakenError:
-		return ec._EmailTakenError(ctx, sel, &obj)
-	case *model.EmailTakenError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._EmailTakenError(ctx, sel, obj)
 	case model.InvalidEmailError:
 		return ec._InvalidEmailError(ctx, sel, &obj)
 	case *model.InvalidEmailError:
@@ -3812,14 +3685,8 @@ func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "firstName":
 			out.Values[i] = ec._Customer_firstName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "lastName":
 			out.Values[i] = ec._Customer_lastName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "email":
 			out.Values[i] = ec._Customer_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3827,9 +3694,6 @@ func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "profession":
 			out.Values[i] = ec._Customer_profession(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3871,47 +3735,6 @@ func (ec *executionContext) _CustomerNotFoundError(ctx context.Context, sel ast.
 			}
 		case "path":
 			out.Values[i] = ec._CustomerNotFoundError_path(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var emailTakenErrorImplementors = []string{"EmailTakenError", "BaseError", "SignUpError"}
-
-func (ec *executionContext) _EmailTakenError(ctx context.Context, sel ast.SelectionSet, obj *model.EmailTakenError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, emailTakenErrorImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("EmailTakenError")
-		case "message":
-			out.Values[i] = ec._EmailTakenError_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "path":
-			out.Values[i] = ec._EmailTakenError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

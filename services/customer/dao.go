@@ -23,11 +23,11 @@ type getCustomersByFilterParams struct {
 }
 
 type customer struct {
-	ID         uuid.UUID `db:"id"`
-	Email      string    `db:"email"`
-	FirstName  string    `db:"first_name"`
-	LastName   string    `db:"last_name"`
-	Profession string    `db:"profession"`
+	ID         uuid.UUID      `db:"id"`
+	Email      string         `db:"email"`
+	FirstName  sql.NullString `db:"first_name"`
+	LastName   sql.NullString `db:"last_name"`
+	Profession sql.NullString `db:"profession"`
 }
 
 func getCustomersByFilter(
@@ -40,7 +40,7 @@ func getCustomersByFilter(
 	query := `
 		select id, email, first_name, last_name, profession
 		from customer
-		where deleted_at is null
+		where true
 	`
 
 	args := []any{}
@@ -64,9 +64,9 @@ func getCustomersByFilter(
 
 type upsertUnverifiedCustomerParams struct {
 	Email      string
-	FirstName  string
-	LastName   string
-	Profession string
+	FirstName  sql.NullString
+	LastName   sql.NullString
+	Profession sql.NullString
 }
 
 func upsertUnverifiedCustomer(
@@ -97,9 +97,9 @@ func upsertUnverifiedCustomer(
 type upsertCustomerParams struct {
 	ID         uuid.UUID
 	Email      string
-	FirstName  string
-	LastName   string
-	Profession string
+	FirstName  sql.NullString
+	LastName   sql.NullString
+	Profession sql.NullString
 }
 
 func upsertCustomer(

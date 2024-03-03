@@ -4,10 +4,10 @@ scalar Time
 
 type Customer {
   id: UUID!
-  firstName: String!
-  lastName: String!
+  firstName: String
+  lastName: String
   email: String!
-  profession: String!
+  profession: String
 }
 
 type Query {
@@ -30,11 +30,6 @@ interface BaseError {
   path: [String!]
 }
 
-type EmailTakenError implements BaseError {
-  message: String!
-  path: [String!]
-}
-
 type InvalidEmailError implements BaseError {
   message: String!
   path: [String!]
@@ -45,7 +40,7 @@ type InvalidReturnToError implements BaseError {
   path: [String!]
 }
 
-union SignUpError = EmailTakenError | InvalidEmailError | InvalidReturnToError
+union SignUpError = InvalidEmailError | InvalidReturnToError
 
 type SignUpPayload {
   errors: [SignUpError!]!

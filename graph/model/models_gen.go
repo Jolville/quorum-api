@@ -44,26 +44,6 @@ func (this CustomerNotFoundError) GetPath() []string {
 
 func (CustomerNotFoundError) IsGetLoginLinkError() {}
 
-type EmailTakenError struct {
-	Message string   `json:"message"`
-	Path    []string `json:"path,omitempty"`
-}
-
-func (EmailTakenError) IsBaseError()            {}
-func (this EmailTakenError) GetMessage() string { return this.Message }
-func (this EmailTakenError) GetPath() []string {
-	if this.Path == nil {
-		return nil
-	}
-	interfaceSlice := make([]string, 0, len(this.Path))
-	for _, concrete := range this.Path {
-		interfaceSlice = append(interfaceSlice, concrete)
-	}
-	return interfaceSlice
-}
-
-func (EmailTakenError) IsSignUpError() {}
-
 type GetLoginLinkInput struct {
 	Email    string `json:"email"`
 	ReturnTo string `json:"returnTo"`

@@ -2,6 +2,7 @@ package srvcustomer
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -24,16 +25,16 @@ type GetCustomersByFilterRequest struct {
 type Customer struct {
 	ID         uuid.UUID
 	Email      string
-	FirstName  string
-	LastName   string
-	Profession string
+	FirstName  *string
+	LastName   *string
+	Profession *string
 }
 
 type CreateUnverifiedCustomerRequest struct {
 	Email      string
-	FirstName  string
-	LastName   string
-	Profession string
+	FirstName  *string
+	LastName   *string
+	Profession *string
 }
 
 var ErrEmailTaken = errors.New("another verified customer exists with that email")
@@ -59,8 +60,24 @@ func (s *srv) GetCustomersByFilter(ctx context.Context, request GetCustomersByFi
 	}
 
 	res := []Customer{}
-	for _, customer := range customers {
-		res = append(res, Customer(customer))
+	for _, row := range customers {
+		customer := Customer{
+			ID:    row.ID,
+			Email: row.Email,
+		}
+		if row.FirstName.Valid {
+			firstName := row.FirstName.String
+			customer.FirstName = &firstName
+		}
+		if row.LastName.Valid {
+			lastName := row.LastName.String
+			customer.LastName = &lastName
+		}
+		if row.Profession.Valid {
+			profession := row.LastName.String
+			customer.Profession = &profession
+		}
+		res = append(res, customer)
 	}
 	return res, nil
 }
@@ -87,7 +104,28 @@ func (s *srv) CreateUnverifiedCustomer(ctx context.Context, request CreateUnveri
 		return uuid.Nil, ErrEmailTaken
 	}
 
-	customerID, err := upsertUnverifiedCustomer(ctx, tx, upsertUnverifiedCustomerParams(request))
+	upsertParams := upsertUnverifiedCustomerParams{
+		Email: request.Email,
+	}
+	if request.FirstName != nil {
+		upsertParams.FirstName = sql.NullString{
+			Valid:  true,
+			String: *request.FirstName,
+		}
+	}
+	if request.LastName != nil {
+		upsertParams.LastName = sql.NullString{
+			Valid:  true,
+			String: *request.LastName,
+		}
+	}
+	if request.Profession != nil {
+		upsertParams.Profession = sql.NullString{
+			Valid:  true,
+			String: *request.Profession,
+		}
+	}
+	customerID, err := upsertUnverifiedCustomer(ctx, tx, upsertParams)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("upserting customer: %w", err)
 	}
