@@ -204,7 +204,7 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 		}
 		return &model.VerifyCustomerTokenPayload{
 			NewToken: &tokenString,
-			Customer: &customer,
+			Customer: customer,
 		}, nil
 	}
 	panic(fmt.Errorf("unknown claims type, cannot proceed"))
@@ -220,7 +220,7 @@ func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, er
 	if err != nil {
 		return nil, fmt.Errorf("getting customer: %w", err)
 	}
-	return &customer, nil
+	return customer, nil
 }
 
 // Mutation returns MutationResolver implementation.

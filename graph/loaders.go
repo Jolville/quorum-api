@@ -14,7 +14,7 @@ type loadersCtxKey struct{}
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
-	CustomerLoader *dataloadgen.Loader[uuid.UUID, srvcustomer.Customer]
+	CustomerLoader *dataloadgen.Loader[uuid.UUID, *srvcustomer.Customer]
 }
 
 type getters struct {
@@ -41,7 +41,7 @@ func LoadersMiddleware(services Services, next http.Handler) http.Handler {
 
 func (g *getters) getCustomers(
 	ctx context.Context, customerIDs []uuid.UUID,
-) ([]srvcustomer.Customer, []error) {
+) ([]*srvcustomer.Customer, []error) {
 	customers, err := g.services.Customer.GetCustomersByFilter(
 		ctx, srvcustomer.GetCustomersByFilterRequest{
 			IDs: customerIDs,
@@ -50,7 +50,15 @@ func (g *getters) getCustomers(
 	if err != nil {
 		return nil, []error{err}
 	}
-	return customers, nil
+	customersMap := map[uuid.UUID]*srvcustomer.Customer{}
+	for _, c := range customers {
+		customersMap[c.ID] = &c
+	}
+	result := []*srvcustomer.Customer{}
+	for _, id := range customerIDs {
+		result = append(result, customersMap[id])
+	}
+	return result, nil
 }
 
 func GetLoaders(ctx context.Context) *Loaders {
