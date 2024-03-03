@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -15,13 +16,12 @@ type JWTClaims struct {
 
 type authCtxKey struct{}
 
-// Middleware decodes the share session cookie and packs the session into context
-func Middleware(jwtSecret string) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tokenString := r.Header.Get("authorization")
+			tokenString, _ := strings.CutPrefix(r.Header.Get("authorization"), "Bearer ")
 			token, err := jwt.ParseWithClaims(
-				tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+				tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 					return []byte(jwtSecret), nil
 				})
 
@@ -32,7 +32,7 @@ func Middleware(jwtSecret string) func(http.Handler) http.Handler {
 			}
 			if claims, ok := token.Claims.(*JWTClaims); ok && claims.IsVerified {
 				userID, err := uuid.Parse(claims.Subject)
-				if err != nil {
+				if err == nil {
 					ctx := context.WithValue(r.Context(), authCtxKey{}, userID)
 					r = r.WithContext(ctx)
 				}

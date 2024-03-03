@@ -62,6 +62,7 @@ func main() {
 
 	srv = AddAccessControlHeaders(srv)
 	srv = graph.LoadersMiddleware(services, srv)
+	srv = graph.AuthMiddleware(jwtSecret)(srv)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
