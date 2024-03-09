@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 git diff --exit-code
 
 current_tag=$(git tag)
