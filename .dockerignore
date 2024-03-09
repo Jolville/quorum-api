@@ -1,0 +1,8 @@
+**/*.yml
+**/*.md
+
+infra
+migrations
+Makefile
+.gitignore
+

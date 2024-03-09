@@ -29,3 +29,11 @@ migration:
 .PHONY: migrate # d (direction) == "up"|"down"
 migrate:
 	migrate -source file://migrations -database postgres://postgres:jesse@localhost:5432/quorum?sslmode=disable $(d)
+
+.PHONY: dockerbuild
+dockerbuild:
+	docker build .
+
+
+
+# gcloud auth configure-docker australia-southeast1-docker.pkg.dev
