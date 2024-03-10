@@ -1,6 +1,7 @@
 **/*.yml
 **/*.md
-*.env
+*.secrets.env
+*.secrets.enc.env
 
 infra
 migrations

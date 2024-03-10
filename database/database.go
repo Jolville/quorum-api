@@ -37,11 +37,11 @@ func New(uri string) (*sqlx.DB, error) {
 }
 
 func GetConnectionStringFromEnv() (string, error) {
-	if os.Getenv("GO_ENV") == "local" {
-		return "postgres://postgres:jesse@localhost:5432/quorum", nil
+	if os.Getenv("DATABASE_URL") == "" {
+		return "", fmt.Errorf("DATABASE_URL not set")
 	}
 
-	return "", fmt.Errorf("not implemented outside local env")
+	return os.Getenv("DATABASE_URL"), nil
 }
 
 type UUIDSlice []uuid.UUID

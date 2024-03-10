@@ -1,12 +1,12 @@
 export GO_ENV=local
 
-.PHONY: encrypt
+.PHONY: encrypt # env local | prod
 encrypt:
-	sops --encrypt local.secrets.env > local.secrets.enc.env
+	sops --encrypt $(env).secrets.env > $(env).secrets.enc.env
 
 .PHONY: decrypt
 decrypt:
-	sops --decrypt local.secrets.enc.env > local.secrets.env
+	sops --decrypt $(env).secrets.enc.env > $(env).secrets.env
 
 .PHONY: watch
 watch:

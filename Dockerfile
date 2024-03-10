@@ -10,5 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /quorum-api .
 
 FROM alpine:latest
 COPY --from=golang /quorum-api .
+COPY local.env .
+COPY prod.env .
 EXPOSE 8080
 CMD ["/quorum-api"]
