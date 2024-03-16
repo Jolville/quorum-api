@@ -3,6 +3,7 @@ module quorum-api
 go 1.22.0
 
 require (
+	cloud.google.com/go/cloudsqlconn v1.8.0
 	github.com/99designs/gqlgen v0.17.44
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/uuid v1.6.0
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/cloudsqlconn v1.8.0 // indirect
 	cloud.google.com/go/compute v1.23.4 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect

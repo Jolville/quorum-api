@@ -3,13 +3,24 @@
 package model
 
 import (
+	"fmt"
+	"io"
 	srvcustomer "quorum-api/services/customer"
+	"strconv"
+	"time"
+
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/google/uuid"
 )
 
 type BaseError interface {
 	IsBaseError()
 	GetMessage() string
 	GetPath() []string
+}
+
+type CreatePostError interface {
+	IsCreatePostError()
 }
 
 type GetLoginLinkError interface {
@@ -22,6 +33,27 @@ type SignUpError interface {
 
 type VerifyCustomerTokenError interface {
 	IsVerifyCustomerTokenError()
+}
+
+type CreatePostInput struct {
+	ID          uuid.UUID                `json:"id"`
+	DesignPhase *DesignPhase             `json:"designPhase,omitempty"`
+	Context     *string                  `json:"context,omitempty"`
+	Category    *PostCategory            `json:"category,omitempty"`
+	LiveAt      *time.Time               `json:"liveAt,omitempty"`
+	ClosesAt    *time.Time               `json:"closesAt,omitempty"`
+	Tags        []string                 `json:"tags,omitempty"`
+	Options     []*CreatePostOptionInput `json:"options"`
+}
+
+type CreatePostOptionInput struct {
+	Position int            `json:"position"`
+	File     graphql.Upload `json:"file"`
+}
+
+type CreatePostPayload struct {
+	Post   *Post             `json:"post,omitempty"`
+	Errors []CreatePostError `json:"errors"`
 }
 
 type CustomerNotFoundError struct {
@@ -120,6 +152,32 @@ func (LinkExpiredError) IsVerifyCustomerTokenError() {}
 type Mutation struct {
 }
 
+type Post struct {
+	ID          uuid.UUID             `json:"id"`
+	DesignPhase *DesignPhase          `json:"designPhase,omitempty"`
+	Context     *string               `json:"context,omitempty"`
+	Category    *PostCategory         `json:"category,omitempty"`
+	LiveAt      *time.Time            `json:"liveAt,omitempty"`
+	ClosesAt    *time.Time            `json:"closesAt,omitempty"`
+	Author      *srvcustomer.Customer `json:"author,omitempty"`
+	Tags        []string              `json:"tags,omitempty"`
+	Options     []*PostOption         `json:"options,omitempty"`
+	Votes       []*PostVote           `json:"votes,omitempty"`
+}
+
+type PostOption struct {
+	ID       uuid.UUID `json:"id"`
+	URL      *string   `json:"url,omitempty"`
+	Position int       `json:"position"`
+}
+
+type PostVote struct {
+	ID     uuid.UUID             `json:"id"`
+	Post   *Post                 `json:"post,omitempty"`
+	Voter  *srvcustomer.Customer `json:"voter,omitempty"`
+	Reason *string               `json:"reason,omitempty"`
+}
+
 type Query struct {
 }
 
@@ -135,6 +193,27 @@ type SignUpPayload struct {
 	Errors []SignUpError `json:"errors"`
 }
 
+type TooManyOptionsError struct {
+	Message    string   `json:"message"`
+	Path       []string `json:"path,omitempty"`
+	MaxOptions int      `json:"maxOptions"`
+}
+
+func (TooManyOptionsError) IsBaseError()            {}
+func (this TooManyOptionsError) GetMessage() string { return this.Message }
+func (this TooManyOptionsError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (TooManyOptionsError) IsCreatePostError() {}
+
 type VerifyCustomerTokenInput struct {
 	Token string `json:"token"`
 }
@@ -143,4 +222,86 @@ type VerifyCustomerTokenPayload struct {
 	Customer *srvcustomer.Customer      `json:"customer,omitempty"`
 	NewToken *string                    `json:"newToken,omitempty"`
 	Errors   []VerifyCustomerTokenError `json:"errors"`
+}
+
+type DesignPhase string
+
+const (
+	DesignPhaseWireframe DesignPhase = "WIREFRAME"
+	DesignPhaseLoFi      DesignPhase = "LO_FI"
+	DesignPhaseHiFi      DesignPhase = "HI_FI"
+)
+
+var AllDesignPhase = []DesignPhase{
+	DesignPhaseWireframe,
+	DesignPhaseLoFi,
+	DesignPhaseHiFi,
+}
+
+func (e DesignPhase) IsValid() bool {
+	switch e {
+	case DesignPhaseWireframe, DesignPhaseLoFi, DesignPhaseHiFi:
+		return true
+	}
+	return false
+}
+
+func (e DesignPhase) String() string {
+	return string(e)
+}
+
+func (e *DesignPhase) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DesignPhase(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DesignPhase", str)
+	}
+	return nil
+}
+
+func (e DesignPhase) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type PostCategory string
+
+const (
+	PostCategoryProductDesign PostCategory = "PRODUCT_DESIGN"
+)
+
+var AllPostCategory = []PostCategory{
+	PostCategoryProductDesign,
+}
+
+func (e PostCategory) IsValid() bool {
+	switch e {
+	case PostCategoryProductDesign:
+		return true
+	}
+	return false
+}
+
+func (e PostCategory) String() string {
+	return string(e)
+}
+
+func (e *PostCategory) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PostCategory(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PostCategory", str)
+	}
+	return nil
+}
+
+func (e PostCategory) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

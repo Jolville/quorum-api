@@ -210,6 +210,11 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 	panic(fmt.Errorf("unknown claims type, cannot proceed"))
 }
 
+// CreatePost is the resolver for the createPost field.
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*model.CreatePostPayload, error) {
+	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+}
+
 // Customer is the resolver for the customer field.
 func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, error) {
 	verifiedCustomer := GetVerifiedCustomer(ctx)
@@ -221,6 +226,11 @@ func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, er
 		return nil, fmt.Errorf("getting customer: %w", err)
 	}
 	return customer, nil
+}
+
+// Post is the resolver for the post field.
+func (r *queryResolver) Post(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+	panic(fmt.Errorf("not implemented: Post - post"))
 }
 
 // Mutation returns MutationResolver implementation.

@@ -2,6 +2,8 @@ scalar UUID
 
 scalar Time
 
+scalar Upload
+
 type Customer {
   id: UUID!
   firstName: String
@@ -12,6 +14,7 @@ type Customer {
 
 type Query {
   customer: Customer
+  post(id: UUID!): Post
 }
 
 input SignUpInput {
@@ -89,4 +92,71 @@ type Mutation {
   verifyCustomerToken(
     input: VerifyCustomerTokenInput!
   ): VerifyCustomerTokenPayload!
+  createPost(input: CreatePostInput!): CreatePostPayload!
+}
+
+type TooManyOptionsError implements BaseError {
+  message: String!
+  path: [String!]
+  maxOptions: Int!
+}
+
+union CreatePostError = TooManyOptionsError
+
+type CreatePostPayload {
+  post: Post
+  errors: [CreatePostError!]!
+}
+
+enum DesignPhase {
+  WIREFRAME
+  LO_FI
+  HI_FI
+}
+
+enum PostCategory {
+  PRODUCT_DESIGN
+}
+
+type Post {
+  id: UUID!
+  designPhase: DesignPhase
+  context: String
+  category: PostCategory
+  liveAt: Time
+  closesAt: Time
+  author: Customer
+  tags: [String!]
+  # Options are ordered by position
+  options: [PostOption!]
+  votes: [PostVote!]
+}
+
+type PostOption {
+  id: UUID!
+  url: String
+  position: Int!
+}
+
+type PostVote {
+  id: UUID!
+  post: Post
+  voter: Customer
+  reason: String
+}
+
+input CreatePostInput {
+  id: UUID!
+  designPhase: DesignPhase
+  context: String
+  category: PostCategory
+  liveAt: Time
+  closesAt: Time
+  tags: [String!]
+  options: [CreatePostOptionInput!]!
+}
+
+input CreatePostOptionInput {
+  position: Int!
+  file: Upload!
 }
