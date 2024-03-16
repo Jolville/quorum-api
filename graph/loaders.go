@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	srvcustomer "quorum-api/services/customer"
+	srvpost "quorum-api/services/post"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,9 +13,15 @@ import (
 
 type loadersCtxKey struct{}
 
-// Loaders wrap your data loaders to inject via middleware
+func GetLoaders(ctx context.Context) *Loaders {
+	return ctx.Value(loadersCtxKey{}).(*Loaders)
+}
+
 type Loaders struct {
-	CustomerLoader *dataloadgen.Loader[uuid.UUID, *srvcustomer.Customer]
+	CustomerLoader   *dataloadgen.Loader[uuid.UUID, *srvcustomer.Customer]
+	PostLoader       *dataloadgen.Loader[uuid.UUID, *srvpost.Post]
+	PostOptionLoader *dataloadgen.Loader[uuid.UUID, *srvpost.Option]
+	PostVoteLoader   *dataloadgen.Loader[uuid.UUID, *srvpost.Vote]
 }
 
 type getters struct {
@@ -26,6 +33,15 @@ func NewLoaders(services Services) *Loaders {
 	return &Loaders{
 		CustomerLoader: dataloadgen.NewLoader(
 			getters.getCustomers, dataloadgen.WithWait(time.Millisecond),
+		),
+		PostLoader: dataloadgen.NewLoader(
+			getters.getPosts, dataloadgen.WithWait(time.Millisecond),
+		),
+		PostOptionLoader: dataloadgen.NewLoader(
+			getters.getPostOptions, dataloadgen.WithWait(time.Millisecond),
+		),
+		PostVoteLoader: dataloadgen.NewLoader(
+			getters.getPostVotes, dataloadgen.WithWait(time.Millisecond),
 		),
 	}
 }
@@ -40,11 +56,11 @@ func LoadersMiddleware(services Services, next http.Handler) http.Handler {
 }
 
 func (g *getters) getCustomers(
-	ctx context.Context, customerIDs []uuid.UUID,
+	ctx context.Context, ids []uuid.UUID,
 ) ([]*srvcustomer.Customer, []error) {
 	customers, err := g.services.Customer.GetCustomersByFilter(
 		ctx, srvcustomer.GetCustomersByFilterRequest{
-			IDs: customerIDs,
+			IDs: ids,
 		},
 	)
 	if err != nil {
@@ -55,12 +71,74 @@ func (g *getters) getCustomers(
 		customersMap[c.ID] = &c
 	}
 	result := []*srvcustomer.Customer{}
-	for _, id := range customerIDs {
+	for _, id := range ids {
 		result = append(result, customersMap[id])
 	}
 	return result, nil
 }
 
-func GetLoaders(ctx context.Context) *Loaders {
-	return ctx.Value(loadersCtxKey{}).(*Loaders)
+func (g *getters) getPostOptions(
+	ctx context.Context, ids []uuid.UUID,
+) ([]*srvpost.Option, []error) {
+	options, err := g.services.Post.GetOptionsByFilter(
+		ctx, srvpost.GetOptionsByFilterRequest{
+			IDs: ids,
+		},
+	)
+	if err != nil {
+		return nil, []error{err}
+	}
+	oMap := map[uuid.UUID]*srvpost.Option{}
+	for _, o := range options {
+		oMap[o.ID] = &o
+	}
+	result := []*srvpost.Option{}
+	for _, id := range ids {
+		result = append(result, oMap[id])
+	}
+	return result, nil
+}
+
+func (g *getters) getPostVotes(
+	ctx context.Context, ids []uuid.UUID,
+) ([]*srvpost.Vote, []error) {
+	votes, err := g.services.Post.GetVotesByFilter(
+		ctx, srvpost.GetVotesByFilterRequest{
+			IDs: ids,
+		},
+	)
+	if err != nil {
+		return nil, []error{err}
+	}
+	vMap := map[uuid.UUID]*srvpost.Vote{}
+	for _, v := range votes {
+		vMap[v.ID] = &v
+	}
+	result := []*srvpost.Vote{}
+	for _, id := range ids {
+		result = append(result, vMap[id])
+	}
+	return result, nil
+}
+
+func (g *getters) getPosts(
+	ctx context.Context, ids []uuid.UUID,
+) ([]*srvpost.Post, []error) {
+	posts, err := g.services.Post.GetPostsByFilter(
+		ctx, srvpost.GetPostsByFilterRequest{
+			IDs: ids,
+		},
+	)
+	if err != nil {
+		return nil, []error{err}
+	}
+	pMap := map[uuid.UUID]*srvpost.Post{}
+	for _, p := range posts {
+		pMap[p.ID] = &p
+	}
+	result := []*srvpost.Post{}
+	for _, id := range ids {
+		result = append(result, pMap[id])
+	}
+	return result, nil
 }
