@@ -240,6 +240,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		LiveAt:      input.LiveAt,
 		ClosesAt:    input.ClosesAt,
 		Tags:        input.Tags,
+		AuthorID:    verifiedCustomer.UUID,
 	})
 	if errors.Is(err, srvpost.ErrLiveAtAlreadyPassed) {
 		return &model.CreatePostPayload{

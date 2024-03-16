@@ -49,6 +49,7 @@ type Vote struct {
 
 type CreatePostRequest struct {
 	ID          uuid.UUID
+	AuthorID    uuid.UUID
 	DesignPhase *DesignPhase
 	Context     *string
 	Category    *PostCategory
