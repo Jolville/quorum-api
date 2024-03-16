@@ -98,10 +98,14 @@ type Mutation {
 type TooManyOptionsError implements BaseError {
   message: String!
   path: [String!]
-  maxOptions: Int!
 }
 
-union CreatePostError = TooManyOptionsError
+type TooFewOptionsError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union CreatePostError = TooManyOptionsError | TooFewOptionsError
 
 type CreatePostPayload {
   post: Post

@@ -193,10 +193,29 @@ type SignUpPayload struct {
 	Errors []SignUpError `json:"errors"`
 }
 
+type TooFewOptionsError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (TooFewOptionsError) IsBaseError()            {}
+func (this TooFewOptionsError) GetMessage() string { return this.Message }
+func (this TooFewOptionsError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (TooFewOptionsError) IsCreatePostError() {}
+
 type TooManyOptionsError struct {
-	Message    string   `json:"message"`
-	Path       []string `json:"path,omitempty"`
-	MaxOptions int      `json:"maxOptions"`
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
 }
 
 func (TooManyOptionsError) IsBaseError()            {}

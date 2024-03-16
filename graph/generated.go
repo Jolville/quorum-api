@@ -129,10 +129,14 @@ type ComplexityRoot struct {
 		Errors func(childComplexity int) int
 	}
 
+	TooFewOptionsError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	TooManyOptionsError struct {
-		MaxOptions func(childComplexity int) int
-		Message    func(childComplexity int) int
-		Path       func(childComplexity int) int
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
 	}
 
 	VerifyCustomerTokenPayload struct {
@@ -477,12 +481,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SignUpPayload.Errors(childComplexity), true
 
-	case "TooManyOptionsError.maxOptions":
-		if e.complexity.TooManyOptionsError.MaxOptions == nil {
+	case "TooFewOptionsError.message":
+		if e.complexity.TooFewOptionsError.Message == nil {
 			break
 		}
 
-		return e.complexity.TooManyOptionsError.MaxOptions(childComplexity), true
+		return e.complexity.TooFewOptionsError.Message(childComplexity), true
+
+	case "TooFewOptionsError.path":
+		if e.complexity.TooFewOptionsError.Path == nil {
+			break
+		}
+
+		return e.complexity.TooFewOptionsError.Path(childComplexity), true
 
 	case "TooManyOptionsError.message":
 		if e.complexity.TooManyOptionsError.Message == nil {
@@ -2793,6 +2804,91 @@ func (ec *executionContext) fieldContext_SignUpPayload_errors(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _TooFewOptionsError_message(ctx context.Context, field graphql.CollectedField, obj *model.TooFewOptionsError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TooFewOptionsError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TooFewOptionsError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TooFewOptionsError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TooFewOptionsError_path(ctx context.Context, field graphql.CollectedField, obj *model.TooFewOptionsError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TooFewOptionsError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TooFewOptionsError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TooFewOptionsError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TooManyOptionsError_message(ctx context.Context, field graphql.CollectedField, obj *model.TooManyOptionsError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TooManyOptionsError_message(ctx, field)
 	if err != nil {
@@ -2873,50 +2969,6 @@ func (ec *executionContext) fieldContext_TooManyOptionsError_path(ctx context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TooManyOptionsError_maxOptions(ctx context.Context, field graphql.CollectedField, obj *model.TooManyOptionsError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TooManyOptionsError_maxOptions(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MaxOptions, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TooManyOptionsError_maxOptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TooManyOptionsError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5102,6 +5154,13 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._TooManyOptionsError(ctx, sel, obj)
+	case model.TooFewOptionsError:
+		return ec._TooFewOptionsError(ctx, sel, &obj)
+	case *model.TooFewOptionsError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TooFewOptionsError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -5118,6 +5177,13 @@ func (ec *executionContext) _CreatePostError(ctx context.Context, sel ast.Select
 			return graphql.Null
 		}
 		return ec._TooManyOptionsError(ctx, sel, obj)
+	case model.TooFewOptionsError:
+		return ec._TooFewOptionsError(ctx, sel, &obj)
+	case *model.TooFewOptionsError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TooFewOptionsError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -5835,6 +5901,47 @@ func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var tooFewOptionsErrorImplementors = []string{"TooFewOptionsError", "BaseError", "CreatePostError"}
+
+func (ec *executionContext) _TooFewOptionsError(ctx context.Context, sel ast.SelectionSet, obj *model.TooFewOptionsError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tooFewOptionsErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TooFewOptionsError")
+		case "message":
+			out.Values[i] = ec._TooFewOptionsError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._TooFewOptionsError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var tooManyOptionsErrorImplementors = []string{"TooManyOptionsError", "BaseError", "CreatePostError"}
 
 func (ec *executionContext) _TooManyOptionsError(ctx context.Context, sel ast.SelectionSet, obj *model.TooManyOptionsError) graphql.Marshaler {
@@ -5853,11 +5960,6 @@ func (ec *executionContext) _TooManyOptionsError(ctx context.Context, sel ast.Se
 			}
 		case "path":
 			out.Values[i] = ec._TooManyOptionsError_path(ctx, field, obj)
-		case "maxOptions":
-			out.Values[i] = ec._TooManyOptionsError_maxOptions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
