@@ -90,3 +90,9 @@ models:
       - github.com/99designs/gqlgen/graphql.UUID
   Customer:
     model: quorum-api/services/customer.Customer
+  Post:
+    model: quorum-api/services/post.Post
+  PostOption:
+    model: quorum-api/services/post.Option
+  PostVote:
+    model: quorum-api/services/post.Vote

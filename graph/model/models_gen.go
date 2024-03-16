@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	srvcustomer "quorum-api/services/customer"
+	srvpost "quorum-api/services/post"
 	"strconv"
 	"time"
 
@@ -35,6 +36,26 @@ type VerifyCustomerTokenError interface {
 	IsVerifyCustomerTokenError()
 }
 
+type AuthorUnknownError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (AuthorUnknownError) IsBaseError()            {}
+func (this AuthorUnknownError) GetMessage() string { return this.Message }
+func (this AuthorUnknownError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (AuthorUnknownError) IsCreatePostError() {}
+
 type CreatePostInput struct {
 	ID          uuid.UUID                `json:"id"`
 	DesignPhase *DesignPhase             `json:"designPhase,omitempty"`
@@ -52,7 +73,7 @@ type CreatePostOptionInput struct {
 }
 
 type CreatePostPayload struct {
-	Post   *Post             `json:"post,omitempty"`
+	Post   *srvpost.Post     `json:"post,omitempty"`
 	Errors []CreatePostError `json:"errors"`
 }
 
@@ -75,6 +96,26 @@ func (this CustomerNotFoundError) GetPath() []string {
 }
 
 func (CustomerNotFoundError) IsGetLoginLinkError() {}
+
+type ErrPostNotOwned struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (ErrPostNotOwned) IsBaseError()            {}
+func (this ErrPostNotOwned) GetMessage() string { return this.Message }
+func (this ErrPostNotOwned) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (ErrPostNotOwned) IsCreatePostError() {}
 
 type GetLoginLinkInput struct {
 	Email    string `json:"email"`
@@ -149,34 +190,48 @@ func (this LinkExpiredError) GetPath() []string {
 
 func (LinkExpiredError) IsVerifyCustomerTokenError() {}
 
+type LiveAtAlreadyPassedError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (LiveAtAlreadyPassedError) IsBaseError()            {}
+func (this LiveAtAlreadyPassedError) GetMessage() string { return this.Message }
+func (this LiveAtAlreadyPassedError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (LiveAtAlreadyPassedError) IsCreatePostError() {}
+
 type Mutation struct {
 }
 
-type Post struct {
-	ID          uuid.UUID             `json:"id"`
-	DesignPhase *DesignPhase          `json:"designPhase,omitempty"`
-	Context     *string               `json:"context,omitempty"`
-	Category    *PostCategory         `json:"category,omitempty"`
-	LiveAt      *time.Time            `json:"liveAt,omitempty"`
-	ClosesAt    *time.Time            `json:"closesAt,omitempty"`
-	Author      *srvcustomer.Customer `json:"author,omitempty"`
-	Tags        []string              `json:"tags,omitempty"`
-	Options     []*PostOption         `json:"options,omitempty"`
-	Votes       []*PostVote           `json:"votes,omitempty"`
+type NotOpenForLongEnoughError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
 }
 
-type PostOption struct {
-	ID       uuid.UUID `json:"id"`
-	URL      *string   `json:"url,omitempty"`
-	Position int       `json:"position"`
+func (NotOpenForLongEnoughError) IsBaseError()            {}
+func (this NotOpenForLongEnoughError) GetMessage() string { return this.Message }
+func (this NotOpenForLongEnoughError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
 }
 
-type PostVote struct {
-	ID     uuid.UUID             `json:"id"`
-	Post   *Post                 `json:"post,omitempty"`
-	Voter  *srvcustomer.Customer `json:"voter,omitempty"`
-	Reason *string               `json:"reason,omitempty"`
-}
+func (NotOpenForLongEnoughError) IsCreatePostError() {}
 
 type Query struct {
 }

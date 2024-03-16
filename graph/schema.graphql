@@ -105,7 +105,33 @@ type TooFewOptionsError implements BaseError {
   path: [String!]
 }
 
-union CreatePostError = TooManyOptionsError | TooFewOptionsError
+type ErrPostNotOwned implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+type AuthorUnknownError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+type LiveAtAlreadyPassedError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+type NotOpenForLongEnoughError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union CreatePostError =
+    TooManyOptionsError
+  | TooFewOptionsError
+  | ErrPostNotOwned
+  | AuthorUnknownError
+  | LiveAtAlreadyPassedError
+  | NotOpenForLongEnoughError
 
 type CreatePostPayload {
   post: Post

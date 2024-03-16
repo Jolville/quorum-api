@@ -28,7 +28,7 @@ type Post struct {
 	Category    *PostCategory
 	LiveAt      *time.Time
 	ClosesAt    *time.Time
-	AuthorID    string
+	AuthorID    uuid.UUID
 	Tags        []string
 	OptionIDs   []uuid.UUID
 	VoteIDs     []uuid.UUID
@@ -81,6 +81,12 @@ type GetVotesByFilterRequest struct {
 var ErrTooManyOptions = errors.New("exceeded the maximum amount of options")
 
 var ErrTooFewOptions = errors.New("at least 2 options are required to create a post")
+
+var ErrPostNotOwned = errors.New("post with id already authored by another user")
+
+var ErrLiveAtAlreadyPassed = errors.New("live at time has already passed")
+
+var ErrNotOpenForLongEnough = errors.New("post must be open for at least 1 hour")
 
 func New(db *sqlx.DB) SRVPost {
 	return &srv{

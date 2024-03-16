@@ -13,6 +13,7 @@ import (
 	"os"
 	"quorum-api/graph/model"
 	srvcustomer "quorum-api/services/customer"
+	srvpost "quorum-api/services/post"
 	"strings"
 	"time"
 
@@ -92,7 +93,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	if os.Getenv("GO_ENV") == "local" {
 		log.Printf("Magic link:\n%s", magicLink)
 	} else {
-		panic(fmt.Errorf("not implemented: GetLoginLink: sending email"))
+		return nil, fmt.Errorf("not implemented: GetLoginLink: sending email")
 	}
 	return &model.SignUpPayload{}, nil
 }
@@ -116,7 +117,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 		},
 	)
 	if err != nil {
-		panic(fmt.Errorf("getting customers: %v", err))
+		return nil, fmt.Errorf("getting customers: %v", err)
 	}
 	if len(customers) < 1 {
 		return &model.GetLoginLinkPayload{
@@ -150,7 +151,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	if os.Getenv("GO_ENV") == "local" {
 		log.Printf("Magic link:\n%s", magicLink)
 	} else {
-		panic(fmt.Errorf("not implemented: GetLoginLink: sending email"))
+		return nil, fmt.Errorf("not implemented: GetLoginLink: sending email")
 	}
 	return &model.GetLoginLinkPayload{}, nil
 }
@@ -171,17 +172,17 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 				},
 			}, nil
 		}
-		panic(fmt.Errorf("parsing token: %v", err))
+		return nil, fmt.Errorf("parsing token: %v", err)
 	} else if claims, ok := token.Claims.(*JWTClaims); ok {
 		if claims.IsVerified {
-			panic("expected token to not be verified")
+			return nil, fmt.Errorf("expected token to not be verified")
 		}
 		customerID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			panic("expected customerID to be a uuid")
+			return nil, fmt.Errorf("expected customerID to be a uuid")
 		}
 		if err = r.Services.Customer.VerifyCustomer(ctx, customerID); err != nil {
-			panic(fmt.Errorf("verifying customer: %v", err))
+			return nil, fmt.Errorf("verifying customer: %v", err)
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 			IsVerified: true,
@@ -207,12 +208,152 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 			Customer: customer,
 		}, nil
 	}
-	panic(fmt.Errorf("unknown claims type, cannot proceed"))
+	return nil, fmt.Errorf("unknown claims type, cannot proceed")
 }
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*model.CreatePostPayload, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+	verifiedCustomer := GetVerifiedCustomer(ctx)
+	if !verifiedCustomer.Valid {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.AuthorUnknownError{
+					Message: "Author of post unknown - try logging again",
+				},
+			},
+		}, nil
+	}
+
+	options := []*srvpost.CreatePostOptionRequest{}
+	for _, o := range input.Options {
+		options = append(options, &srvpost.CreatePostOptionRequest{
+			Position: o.Position,
+			File:     srvpost.Upload(o.File),
+		})
+	}
+
+	err := r.Services.Post.CreatePost(ctx, srvpost.CreatePostRequest{
+		ID:          input.ID,
+		Options:     options,
+		DesignPhase: (*srvpost.DesignPhase)(input.DesignPhase),
+		Category:    (*srvpost.PostCategory)(input.Category),
+		LiveAt:      input.LiveAt,
+		ClosesAt:    input.ClosesAt,
+		Tags:        input.Tags,
+	})
+	if errors.Is(err, srvpost.ErrLiveAtAlreadyPassed) {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.LiveAtAlreadyPassedError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrNotOpenForLongEnough) {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.NotOpenForLongEnoughError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrPostNotOwned) {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.ErrPostNotOwned{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrTooFewOptions) {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.TooFewOptionsError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrTooManyOptions) {
+		return &model.CreatePostPayload{
+			Errors: []model.CreatePostError{
+				model.TooManyOptionsError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("creating post: %w", err)
+	}
+
+	post, err := GetLoaders(ctx).PostLoader.Load(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("loading post: %w", err)
+	}
+
+	return &model.CreatePostPayload{
+		Post:   post,
+		Errors: []model.CreatePostError{},
+	}, nil
+}
+
+// DesignPhase is the resolver for the designPhase field.
+func (r *postResolver) DesignPhase(ctx context.Context, obj *srvpost.Post) (*model.DesignPhase, error) {
+	return (*model.DesignPhase)(obj.DesignPhase), nil
+}
+
+// Category is the resolver for the category field.
+func (r *postResolver) Category(ctx context.Context, obj *srvpost.Post) (*model.PostCategory, error) {
+	return (*model.PostCategory)(obj.Category), nil
+}
+
+// Author is the resolver for the author field.
+func (r *postResolver) Author(ctx context.Context, obj *srvpost.Post) (*srvcustomer.Customer, error) {
+	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.AuthorID)
+	if err != nil {
+		return nil, fmt.Errorf("loading author: %w", err)
+	}
+	return customer, nil
+}
+
+// Options is the resolver for the options field.
+func (r *postResolver) Options(ctx context.Context, obj *srvpost.Post) ([]*srvpost.Option, error) {
+	options, err := GetLoaders(ctx).PostOptionLoader.LoadAll(ctx, obj.OptionIDs)
+	if err != nil {
+		return nil, fmt.Errorf("loading options: %w", err)
+	}
+	return options, nil
+}
+
+// Votes is the resolver for the votes field.
+func (r *postResolver) Votes(ctx context.Context, obj *srvpost.Post) ([]*srvpost.Vote, error) {
+	votes, err := GetLoaders(ctx).PostVoteLoader.LoadAll(ctx, obj.VoteIDs)
+	if err != nil {
+		return nil, fmt.Errorf("loading votes: %w", err)
+	}
+	return votes, nil
+}
+
+// Post is the resolver for the post field.
+func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpost.Post, error) {
+	post, err := GetLoaders(ctx).PostLoader.Load(ctx, obj.PostID)
+	if err != nil {
+		return nil, fmt.Errorf("loading post: %w", err)
+	}
+	return post, nil
+}
+
+// Voter is the resolver for the voter field.
+func (r *postVoteResolver) Voter(ctx context.Context, obj *srvpost.Vote) (*srvcustomer.Customer, error) {
+	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.VoterID)
+	if err != nil {
+		return nil, fmt.Errorf("loading author: %w", err)
+	}
+	return customer, nil
 }
 
 // Customer is the resolver for the customer field.
@@ -229,15 +370,27 @@ func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, er
 }
 
 // Post is the resolver for the post field.
-func (r *queryResolver) Post(ctx context.Context, id uuid.UUID) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+func (r *queryResolver) Post(ctx context.Context, id uuid.UUID) (*srvpost.Post, error) {
+	post, err := GetLoaders(ctx).PostLoader.Load(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("loading post: %w", err)
+	}
+	return post, nil
 }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// Post returns PostResolver implementation.
+func (r *Resolver) Post() PostResolver { return &postResolver{r} }
+
+// PostVote returns PostVoteResolver implementation.
+func (r *Resolver) PostVote() PostVoteResolver { return &postVoteResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
+type postResolver struct{ *Resolver }
+type postVoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
