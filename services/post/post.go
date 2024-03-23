@@ -148,6 +148,8 @@ func (s *srv) GetPostsByFilter(
 			Tags:        p.Tags,
 			OptionIDs:   p.OptionIDs,
 			VoteIDs:     p.VoteIDs,
+			CreatedAt:   p.CreatedAt,
+			UpdatedAt:   p.UpdatedAt,
 		})
 	}
 
