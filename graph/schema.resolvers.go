@@ -373,6 +373,16 @@ func (r *postResolver) Status(ctx context.Context, obj *srvpost.Post) (model.Pos
 	return model.PostStatusClosed, nil
 }
 
+// CreatedAt is the resolver for the createdAt field.
+func (r *postResolver) CreatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+}
+
+// UpdatedAt is the resolver for the updatedAt field.
+func (r *postResolver) UpdatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
+}
+
 // Post is the resolver for the post field.
 func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpost.Post, error) {
 	post, err := GetLoaders(ctx).PostLoader.Load(ctx, obj.PostID)

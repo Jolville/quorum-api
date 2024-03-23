@@ -173,6 +173,8 @@ type Post {
   options: [PostOption!]
   votes: [PostVote!]
   status: PostStatus!
+  createdAt: Time!
+  updatedAt: Time!
 }
 
 type PostOption {

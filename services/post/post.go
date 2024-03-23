@@ -35,6 +35,8 @@ type Post struct {
 	Tags        []string
 	OptionIDs   []uuid.UUID
 	VoteIDs     []uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type Option struct {

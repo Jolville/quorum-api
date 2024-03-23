@@ -45,6 +45,8 @@ type post struct {
 	Tags        []string           `db:"tags"`
 	OptionIDs   database.UUIDSlice `db:"option_ids"`
 	VoteIDs     database.UUIDSlice `db:"vote_ids"`
+	CreatedAt   time.Time          `db:"created_at"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 }
 
 func getPostsByFilter(
@@ -77,7 +79,7 @@ func getPostsByFilter(
 	args := []any{}
 	if len(params.IDs) > 0 {
 		args = append(args, params.IDs)
-		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
+		query = fmt.Sprintf("%s and post.id = any($%v)", query, len(args))
 	}
 
 	query = fmt.Sprintf(`%s
