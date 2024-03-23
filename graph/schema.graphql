@@ -92,7 +92,7 @@ type Mutation {
   verifyCustomerToken(
     input: VerifyCustomerTokenInput!
   ): VerifyCustomerTokenPayload!
-  createPost(input: CreatePostInput!): CreatePostPayload!
+  upsertPost(input: UpsertPostInput!): UpsertPostPayload!
 }
 
 type TooManyOptionsError implements BaseError {
@@ -125,17 +125,29 @@ type NotOpenForLongEnoughError implements BaseError {
   path: [String!]
 }
 
-union CreatePostError =
+type FileTooLargeError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+type UnsupportedFileTypeError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union UpsertPostError =
     TooManyOptionsError
   | TooFewOptionsError
   | ErrPostNotOwned
   | AuthorUnknownError
   | LiveAtAlreadyPassedError
   | NotOpenForLongEnoughError
+  | FileTooLargeError
+  | UnsupportedFileTypeError
 
-type CreatePostPayload {
+type UpsertPostPayload {
   post: Post
-  errors: [CreatePostError!]!
+  errors: [UpsertPostError!]!
 }
 
 enum DesignPhase {
@@ -160,6 +172,7 @@ type Post {
   # Options are ordered by position
   options: [PostOption!]
   votes: [PostVote!]
+  status: PostStatus!
 }
 
 type PostOption {
@@ -175,18 +188,25 @@ type PostVote {
   reason: String
 }
 
-input CreatePostInput {
+input UpsertPostInput {
   id: UUID!
   designPhase: DesignPhase
   context: String
   category: PostCategory
   liveAt: Time
   closesAt: Time
-  tags: [String!]
-  options: [CreatePostOptionInput!]!
+  tags: [String!]!
+  options: [UpsertPostOptionInput!]!
 }
 
-input CreatePostOptionInput {
+input UpsertPostOptionInput {
+  id: UUID!
   position: Int!
-  file: Upload!
+  file: Upload
+}
+
+enum PostStatus {
+  DRAFT
+  LIVE
+  CLOSED
 }

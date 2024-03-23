@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
+
+	"cloud.google.com/go/storage"
 )
 
 const defaultPort = "8080"
@@ -48,9 +51,12 @@ func main() {
 		log.Fatalf("connecting to db: %v", err)
 	}
 
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+
 	services := graph.Services{
 		Customer: srvcustomer.New(db),
-		Post:     srvpost.New(db),
+		Post:     srvpost.New(db, client.Bucket("quorum-vote")),
 	}
 
 	var srv http.Handler = handler.NewDefaultServer(

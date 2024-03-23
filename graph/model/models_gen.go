@@ -20,16 +20,16 @@ type BaseError interface {
 	GetPath() []string
 }
 
-type CreatePostError interface {
-	IsCreatePostError()
-}
-
 type GetLoginLinkError interface {
 	IsGetLoginLinkError()
 }
 
 type SignUpError interface {
 	IsSignUpError()
+}
+
+type UpsertPostError interface {
+	IsUpsertPostError()
 }
 
 type VerifyCustomerTokenError interface {
@@ -54,28 +54,7 @@ func (this AuthorUnknownError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (AuthorUnknownError) IsCreatePostError() {}
-
-type CreatePostInput struct {
-	ID          uuid.UUID                `json:"id"`
-	DesignPhase *DesignPhase             `json:"designPhase,omitempty"`
-	Context     *string                  `json:"context,omitempty"`
-	Category    *PostCategory            `json:"category,omitempty"`
-	LiveAt      *time.Time               `json:"liveAt,omitempty"`
-	ClosesAt    *time.Time               `json:"closesAt,omitempty"`
-	Tags        []string                 `json:"tags,omitempty"`
-	Options     []*CreatePostOptionInput `json:"options"`
-}
-
-type CreatePostOptionInput struct {
-	Position int            `json:"position"`
-	File     graphql.Upload `json:"file"`
-}
-
-type CreatePostPayload struct {
-	Post   *srvpost.Post     `json:"post,omitempty"`
-	Errors []CreatePostError `json:"errors"`
-}
+func (AuthorUnknownError) IsUpsertPostError() {}
 
 type CustomerNotFoundError struct {
 	Message string   `json:"message"`
@@ -115,7 +94,27 @@ func (this ErrPostNotOwned) GetPath() []string {
 	return interfaceSlice
 }
 
-func (ErrPostNotOwned) IsCreatePostError() {}
+func (ErrPostNotOwned) IsUpsertPostError() {}
+
+type FileTooLargeError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (FileTooLargeError) IsBaseError()            {}
+func (this FileTooLargeError) GetMessage() string { return this.Message }
+func (this FileTooLargeError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (FileTooLargeError) IsUpsertPostError() {}
 
 type GetLoginLinkInput struct {
 	Email    string `json:"email"`
@@ -208,7 +207,7 @@ func (this LiveAtAlreadyPassedError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (LiveAtAlreadyPassedError) IsCreatePostError() {}
+func (LiveAtAlreadyPassedError) IsUpsertPostError() {}
 
 type Mutation struct {
 }
@@ -231,7 +230,7 @@ func (this NotOpenForLongEnoughError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (NotOpenForLongEnoughError) IsCreatePostError() {}
+func (NotOpenForLongEnoughError) IsUpsertPostError() {}
 
 type Query struct {
 }
@@ -266,7 +265,7 @@ func (this TooFewOptionsError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (TooFewOptionsError) IsCreatePostError() {}
+func (TooFewOptionsError) IsUpsertPostError() {}
 
 type TooManyOptionsError struct {
 	Message string   `json:"message"`
@@ -286,7 +285,49 @@ func (this TooManyOptionsError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (TooManyOptionsError) IsCreatePostError() {}
+func (TooManyOptionsError) IsUpsertPostError() {}
+
+type UnsupportedFileTypeError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (UnsupportedFileTypeError) IsBaseError()            {}
+func (this UnsupportedFileTypeError) GetMessage() string { return this.Message }
+func (this UnsupportedFileTypeError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (UnsupportedFileTypeError) IsUpsertPostError() {}
+
+type UpsertPostInput struct {
+	ID          uuid.UUID                `json:"id"`
+	DesignPhase *DesignPhase             `json:"designPhase,omitempty"`
+	Context     *string                  `json:"context,omitempty"`
+	Category    *PostCategory            `json:"category,omitempty"`
+	LiveAt      *time.Time               `json:"liveAt,omitempty"`
+	ClosesAt    *time.Time               `json:"closesAt,omitempty"`
+	Tags        []string                 `json:"tags"`
+	Options     []*UpsertPostOptionInput `json:"options"`
+}
+
+type UpsertPostOptionInput struct {
+	ID       uuid.UUID       `json:"id"`
+	Position int             `json:"position"`
+	File     *graphql.Upload `json:"file,omitempty"`
+}
+
+type UpsertPostPayload struct {
+	Post   *srvpost.Post     `json:"post,omitempty"`
+	Errors []UpsertPostError `json:"errors"`
+}
 
 type VerifyCustomerTokenInput struct {
 	Token string `json:"token"`
@@ -377,5 +418,48 @@ func (e *PostCategory) UnmarshalGQL(v interface{}) error {
 }
 
 func (e PostCategory) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type PostStatus string
+
+const (
+	PostStatusDraft  PostStatus = "DRAFT"
+	PostStatusLive   PostStatus = "LIVE"
+	PostStatusClosed PostStatus = "CLOSED"
+)
+
+var AllPostStatus = []PostStatus{
+	PostStatusDraft,
+	PostStatusLive,
+	PostStatusClosed,
+}
+
+func (e PostStatus) IsValid() bool {
+	switch e {
+	case PostStatusDraft, PostStatusLive, PostStatusClosed:
+		return true
+	}
+	return false
+}
+
+func (e PostStatus) String() string {
+	return string(e)
+}
+
+func (e *PostStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PostStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PostStatus", str)
+	}
+	return nil
+}
+
+func (e PostStatus) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

@@ -89,6 +89,10 @@ type UUIDSlice []uuid.UUID
 func (u *UUIDSlice) Scan(src interface{}) error {
 	switch src := src.(type) {
 	case string:
+		if src == "NULL" {
+			*u = []uuid.UUID{}
+			return nil
+		}
 		out := []uuid.UUID{}
 		r := strings.NewReplacer("{", "", "}", "")
 		rawUUIDs := strings.Split(r.Replace(src), ",")

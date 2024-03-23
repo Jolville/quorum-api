@@ -211,12 +211,12 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 	return nil, fmt.Errorf("unknown claims type, cannot proceed")
 }
 
-// CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*model.CreatePostPayload, error) {
+// UpsertPost is the resolver for the upsertPost field.
+func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPostInput) (*model.UpsertPostPayload, error) {
 	verifiedCustomer := GetVerifiedCustomer(ctx)
 	if !verifiedCustomer.Valid {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.AuthorUnknownError{
 					Message: "Author of post unknown - try logging again",
 				},
@@ -224,15 +224,25 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		}, nil
 	}
 
-	options := []*srvpost.CreatePostOptionRequest{}
+	options := []*srvpost.UpsertPostOptionRequest{}
 	for _, o := range input.Options {
-		options = append(options, &srvpost.CreatePostOptionRequest{
+		var file *srvpost.Upload
+		if o.File != nil {
+			file = &srvpost.Upload{
+				File:        o.File.File,
+				Size:        o.File.Size,
+				Filename:    o.File.Filename,
+				ContentType: o.File.ContentType,
+			}
+		}
+		options = append(options, &srvpost.UpsertPostOptionRequest{
 			Position: o.Position,
-			File:     srvpost.Upload(o.File),
+			ID:       o.ID,
+			File:     file,
 		})
 	}
 
-	err := r.Services.Post.CreatePost(ctx, srvpost.CreatePostRequest{
+	err := r.Services.Post.UpsertPost(ctx, srvpost.UpsertPostRequest{
 		ID:          input.ID,
 		Options:     options,
 		DesignPhase: (*srvpost.DesignPhase)(input.DesignPhase),
@@ -243,8 +253,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		AuthorID:    verifiedCustomer.UUID,
 	})
 	if errors.Is(err, srvpost.ErrLiveAtAlreadyPassed) {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.LiveAtAlreadyPassedError{
 					Message: err.Error(),
 				},
@@ -252,8 +262,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		}, nil
 	}
 	if errors.Is(err, srvpost.ErrNotOpenForLongEnough) {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.NotOpenForLongEnoughError{
 					Message: err.Error(),
 				},
@@ -261,8 +271,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		}, nil
 	}
 	if errors.Is(err, srvpost.ErrPostNotOwned) {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.ErrPostNotOwned{
 					Message: err.Error(),
 				},
@@ -270,8 +280,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		}, nil
 	}
 	if errors.Is(err, srvpost.ErrTooFewOptions) {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.TooFewOptionsError{
 					Message: err.Error(),
 				},
@@ -279,9 +289,27 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		}, nil
 	}
 	if errors.Is(err, srvpost.ErrTooManyOptions) {
-		return &model.CreatePostPayload{
-			Errors: []model.CreatePostError{
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
 				model.TooManyOptionsError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrFileTooLarge) {
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
+				model.FileTooLargeError{
+					Message: err.Error(),
+				},
+			},
+		}, nil
+	}
+	if errors.Is(err, srvpost.ErrUnsupportedFileType) {
+		return &model.UpsertPostPayload{
+			Errors: []model.UpsertPostError{
+				model.UnsupportedFileTypeError{
 					Message: err.Error(),
 				},
 			},
@@ -296,9 +324,9 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		return nil, fmt.Errorf("loading post: %w", err)
 	}
 
-	return &model.CreatePostPayload{
+	return &model.UpsertPostPayload{
 		Post:   post,
-		Errors: []model.CreatePostError{},
+		Errors: []model.UpsertPostError{},
 	}, nil
 }
 
@@ -337,6 +365,20 @@ func (r *postResolver) Votes(ctx context.Context, obj *srvpost.Post) ([]*srvpost
 		return nil, fmt.Errorf("loading votes: %w", err)
 	}
 	return votes, nil
+}
+
+// Status is the resolver for the status field.
+func (r *postResolver) Status(ctx context.Context, obj *srvpost.Post) (model.PostStatus, error) {
+	if obj == nil || obj.LiveAt == nil || obj.ClosesAt == nil {
+		return model.PostStatusDraft, nil
+	}
+	if obj.LiveAt.After(time.Now()) {
+		return model.PostStatusDraft, nil
+	}
+	if obj.ClosesAt.After(time.Now()) {
+		return model.PostStatusLive, nil
+	}
+	return model.PostStatusClosed, nil
 }
 
 // Post is the resolver for the post field.

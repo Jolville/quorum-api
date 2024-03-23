@@ -2,10 +2,9 @@ package srvpost
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"quorum-api/database"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -31,129 +30,208 @@ const (
 	DesignPhaseHiFi      DesignPhase = "HI_FI"
 )
 
-type getCustomersByFilterParams struct {
-	IDs    []uuid.UUID
-	Emails []string
+type getPostsByFilterParams struct {
+	IDs []uuid.UUID
 }
 
-type customer struct {
-	ID         uuid.UUID      `db:"id"`
-	Email      string         `db:"email"`
-	FirstName  sql.NullString `db:"first_name"`
-	LastName   sql.NullString `db:"last_name"`
-	Profession sql.NullString `db:"profession"`
+type post struct {
+	ID          uuid.UUID          `db:"id"`
+	DesignPhase *DesignPhase       `db:"design_phase"`
+	Context     *string            `db:"context"`
+	Category    *PostCategory      `db:"category"`
+	LiveAt      *time.Time         `db:"live_at"`
+	ClosesAt    *time.Time         `db:"closes_at"`
+	AuthorID    uuid.UUID          `db:"author_id"`
+	Tags        []string           `db:"tags"`
+	OptionIDs   database.UUIDSlice `db:"option_ids"`
+	VoteIDs     database.UUIDSlice `db:"vote_ids"`
 }
 
-func getCustomersByFilter(
+func getPostsByFilter(
 	ctx context.Context,
 	db database.Q,
-	params getCustomersByFilterParams,
+	params getPostsByFilterParams,
 	dbLock DBLock,
-) ([]customer, error) {
-	customers := []customer{}
+) ([]post, error) {
+	posts := []post{}
 	query := `
-		select id, email, first_name, last_name, profession
-		from customer
+		select
+			post.id,
+			post.author_id,
+			post.context,
+			post.category,
+			post.created_at,
+			post.updated_at,
+			post.live_at,
+			post.closes_at,
+			array_agg(po.id) option_ids,
+			array_agg(pv.id) vote_ids,
+			array_agg(pt.tag) tags
+		from post
+		left join post_option po on po.post_id = post.id
+		left join post_vote pv on pv.post_id = post.id
+		left join post_tag pt on pt.post_id = post.id
 		where true
 	`
 
 	args := []any{}
-	if len(params.Emails) > 0 {
-		args = append(args, params.Emails)
-		query = fmt.Sprintf("%s and email = any($%v)", query, len(args))
-	}
 	if len(params.IDs) > 0 {
 		args = append(args, params.IDs)
 		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
 	}
 
-	query = fmt.Sprintf("%s %s", query, dbLock)
+	query = fmt.Sprintf(`%s
+		group by
+			post.id,
+			post.author_id,
+			post.context,
+			post.category,
+			post.created_at,
+			post.updated_at,
+			post.live_at,
+			post.closes_at
+		order by post.live_at desc
+	%s`, query, dbLock)
 
-	if err := db.SelectContext(ctx, &customers, query, args...); err != nil {
-		return nil, fmt.Errorf("selecting customers: %w", err)
+	if err := db.SelectContext(ctx, &posts, query, args...); err != nil {
+		return nil, fmt.Errorf("selecting posts: %w", err)
 	}
 
-	return customers, nil
+	return posts, nil
 }
 
-type upsertUnverifiedCustomerParams struct {
-	Email      string
-	FirstName  sql.NullString
-	LastName   sql.NullString
-	Profession sql.NullString
+type getPostOptionsByFilterParams struct {
+	IDs     []uuid.UUID
+	PostIDs []uuid.UUID
 }
 
-func upsertUnverifiedCustomer(
-	ctx context.Context, q database.Q, params upsertUnverifiedCustomerParams,
-) (uuid.UUID, error) {
-	customerID := uuid.UUID{}
-	if err := q.GetContext(ctx, &customerID, `
-		insert into unverified_customer (
-			id, email, first_name, last_name, profession
-		) values ($1, $2, $3, $4, $5)
-		on conflict (email) do update set
-			first_name = $3,
-			last_name = $4,
-			profession = $5
-		returning id
-		`,
-		uuid.New(),
-		params.Email,
-		params.FirstName,
-		params.LastName,
-		params.Profession,
-	); err != nil {
-		return uuid.Nil, fmt.Errorf("inserting into unverified_customer: %w", err)
+type postOption struct {
+	ID       uuid.UUID `db:"id"`
+	PostID   uuid.UUID `db:"post_id"`
+	Position int       `db:"position"`
+	FileRef  string    `db:"file_ref"`
+}
+
+func getPostOptionsByFilter(
+	ctx context.Context,
+	db database.Q,
+	params getPostOptionsByFilterParams,
+	dbLock DBLock,
+) ([]postOption, error) {
+	postOptions := []postOption{}
+	query := `
+		select
+			id,
+			post_id,
+			position,
+			file_ref
+		from post_option
+		where true
+	`
+
+	args := []any{}
+	if len(params.IDs) > 0 {
+		args = append(args, params.IDs)
+		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
 	}
-	return customerID, nil
+	if len(params.PostIDs) > 0 {
+		args = append(args, params.IDs)
+		query = fmt.Sprintf("%s and post_id = any($%v)", query, len(args))
+	}
+
+	query = fmt.Sprintf(`%s
+		order by post_id, position
+	%s`, query, dbLock)
+
+	if err := db.SelectContext(ctx, &postOptions, query, args...); err != nil {
+		return nil, fmt.Errorf("selecting post_options: %w", err)
+	}
+
+	return postOptions, nil
 }
 
-type upsertCustomerParams struct {
-	ID         uuid.UUID
-	Email      string
-	FirstName  sql.NullString
-	LastName   sql.NullString
-	Profession sql.NullString
+type upsertPostParams struct {
+	ID          uuid.UUID     `db:"id"`
+	AuthorID    uuid.UUID     `db:"author_id"`
+	DesignPhase *DesignPhase  `db:"design_phase"`
+	Context     *string       `db:"context"`
+	Category    *PostCategory `db:"category"`
+	LiveAt      *time.Time    `db:"live_at"`
+	ClosesAt    *time.Time    `db:"closes_at"`
 }
 
-func upsertCustomer(
-	ctx context.Context, q database.Q, params upsertCustomerParams,
+func insertPost(
+	ctx context.Context,
+	db database.Q,
+	params upsertPostParams,
 ) error {
-	if _, err := q.ExecContext(ctx, `
-		insert into customer (
-			id, email, first_name, last_name, profession
-		) values ($1, $2, $3, $4, $5)
-		on conflict (id) do update set
-			first_name = $3,
-			last_name = $4,
-			profession = $5,
-			updated_at = now()
-		`,
-		params.ID,
-		params.Email,
-		params.FirstName,
-		params.LastName,
-		params.Profession,
-	); err != nil {
-		return fmt.Errorf("inserting into customer: %w", err)
+	if _, err := db.NamedExecContext(ctx, `
+		insert into post (
+			id,
+			author_id,
+			design_phase,
+			context,
+			category,
+			live_at,
+			closes_at
+		) values (
+			:id,
+			:author_id,
+			:design_phase,
+			:context,
+			:category,
+			:live_at,
+			:closes_at
+		)
+	`, params); err != nil {
+		return fmt.Errorf("inserting post: %w", err)
 	}
 	return nil
 }
 
-var errNoUnverifiedCustomer = errors.New("no unverified customer found")
+type postTag struct {
+	PostID uuid.UUID `db:"post_id"`
+	Tag    string    `db:"tag"`
+}
 
-func getUnverifiedCustomer(
-	ctx context.Context, q database.Q, id uuid.UUID,
-) (*customer, error) {
-	customer := customer{}
-	if err := q.GetContext(ctx, &customer, `
-		select id, email, first_name, last_name, profession from unverified_customer where id = $1
-	`, id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errNoUnverifiedCustomer
-		}
-		return nil, fmt.Errorf("updating unverified_customer: %w", err)
+func insertPostTags(
+	ctx context.Context,
+	db database.Q,
+	postTags []postTag,
+) error {
+	if _, err := db.NamedExecContext(ctx, `
+		insert into post_tag (
+			post_id,
+			tag
+		) values (
+			:post_id,
+			:tag
+		) on conflict do nothing
+	`, postTags); err != nil {
+		return fmt.Errorf("inserting post: %w", err)
 	}
+	return nil
+}
 
-	return &customer, nil
+func insertPostOptions(
+	ctx context.Context,
+	db database.Q,
+	postOptions []postOption,
+) error {
+	if _, err := db.NamedExecContext(ctx, `
+		insert into post_option (
+			id,
+			post_id,
+			position,
+			file_ref
+		) values (
+			:id,
+			:post_id,
+			:position,
+			:file_ref
+		)
+	`, postOptions); err != nil {
+		return fmt.Errorf("inserting post: %w", err)
+	}
+	return nil
 }
