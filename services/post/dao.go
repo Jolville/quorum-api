@@ -64,9 +64,9 @@ func getPostsByFilter(
 			post.updated_at,
 			post.opens_at,
 			post.closes_at,
-			array_agg(po.id) option_ids,
-			array_agg(pv.id) vote_ids,
-			array_agg(pt.tag) tags
+			array_agg(po.id) filter (where po.id is not null) option_ids,
+			array_agg(pv.id) filter (where pv.id is not null) vote_ids,
+			array_agg(pt.tag) filter (where pt.tag is not null) tags
 		from post
 		left join post_option po on po.post_id = post.id
 		left join post_vote pv on pv.post_id = post.id
