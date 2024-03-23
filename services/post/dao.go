@@ -42,7 +42,6 @@ type post struct {
 	OpensAt     *time.Time         `db:"opens_at"`
 	ClosesAt    *time.Time         `db:"closes_at"`
 	AuthorID    uuid.UUID          `db:"author_id"`
-	Tags        []string           `db:"tags"`
 	OptionIDs   database.UUIDSlice `db:"option_ids"`
 	VoteIDs     database.UUIDSlice `db:"vote_ids"`
 	CreatedAt   time.Time          `db:"created_at"`
@@ -67,12 +66,10 @@ func getPostsByFilter(
 			post.opens_at,
 			post.closes_at,
 			array_agg(po.id) filter (where po.id is not null) option_ids,
-			array_agg(pv.id) filter (where pv.id is not null) vote_ids,
-			array_agg(pt.tag) filter (where pt.tag is not null) tags
+			array_agg(pv.id) filter (where pv.id is not null) vote_ids
 		from post
 		left join post_option po on po.post_id = post.id
 		left join post_vote pv on pv.post_id = post.id
-		left join post_tag pt on pt.post_id = post.id
 		where true
 	`
 
@@ -239,44 +236,6 @@ func upsertPost(
 
 	`, params); err != nil {
 		return fmt.Errorf("inserting post: %w", err)
-	}
-	return nil
-}
-
-type postTag struct {
-	PostID uuid.UUID `db:"post_id"`
-	Tag    string    `db:"tag"`
-}
-
-func upsertPostTags(
-	ctx context.Context,
-	db database.Q,
-	postTags []postTag,
-) error {
-	if _, err := db.NamedExecContext(ctx, `
-		insert into post_tag (
-			post_id,
-			tag
-		) values (
-			:post_id,
-			:tag
-		) on conflict do nothing
-	`, postTags); err != nil {
-		return fmt.Errorf("inserting post_tag: %w", err)
-	}
-	return nil
-}
-
-func deletePostTags(
-	ctx context.Context,
-	db database.Q,
-	postID uuid.UUID,
-	tags []string,
-) error {
-	if _, err := db.ExecContext(ctx, `
-		delete from post_tag where post_id = $1 and tag = any($2)
-		`, postID, tags); err != nil {
-		return fmt.Errorf("deleting from post_tag: %w", err)
 	}
 	return nil
 }

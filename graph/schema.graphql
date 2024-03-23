@@ -168,7 +168,6 @@ type Post {
   opensAt: Time
   closesAt: Time
   author: Customer
-  tags: [String!]
   # Options are ordered by position
   options: [PostOption!]
   votes: [PostVote!]
@@ -197,7 +196,6 @@ input UpsertPostInput {
   category: PostCategory
   opensAt: Time
   closesAt: Time
-  tags: [String!]!
   options: [UpsertPostOptionInput!]!
 }
 

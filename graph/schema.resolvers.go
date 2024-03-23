@@ -249,7 +249,6 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 		Category:    (*srvpost.PostCategory)(input.Category),
 		OpensAt:     input.OpensAt,
 		ClosesAt:    input.ClosesAt,
-		Tags:        input.Tags,
 		AuthorID:    verifiedCustomer.UUID,
 	})
 	if errors.Is(err, srvpost.ErrOpensAtAlreadyPassed) {
@@ -373,16 +372,6 @@ func (r *postResolver) Status(ctx context.Context, obj *srvpost.Post) (model.Pos
 	return model.PostStatusClosed, nil
 }
 
-// CreatedAt is the resolver for the createdAt field.
-func (r *postResolver) CreatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
-}
-
-// UpdatedAt is the resolver for the updatedAt field.
-func (r *postResolver) UpdatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
-}
-
 // Post is the resolver for the post field.
 func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpost.Post, error) {
 	post, err := GetLoaders(ctx).PostLoader.Load(ctx, obj.PostID)
@@ -439,3 +428,16 @@ type mutationResolver struct{ *Resolver }
 type postResolver struct{ *Resolver }
 type postVoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *postResolver) CreatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+}
+func (r *postResolver) UpdatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
+}

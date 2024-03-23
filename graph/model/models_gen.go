@@ -314,7 +314,6 @@ type UpsertPostInput struct {
 	Category    *PostCategory            `json:"category,omitempty"`
 	OpensAt     *time.Time               `json:"opensAt,omitempty"`
 	ClosesAt    *time.Time               `json:"closesAt,omitempty"`
-	Tags        []string                 `json:"tags"`
 	Options     []*UpsertPostOptionInput `json:"options"`
 }
 

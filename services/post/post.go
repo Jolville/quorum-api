@@ -32,7 +32,6 @@ type Post struct {
 	OpensAt     *time.Time
 	ClosesAt    *time.Time
 	AuthorID    uuid.UUID
-	Tags        []string
 	OptionIDs   []uuid.UUID
 	VoteIDs     []uuid.UUID
 	CreatedAt   time.Time
@@ -61,7 +60,6 @@ type UpsertPostRequest struct {
 	Category    *PostCategory
 	OpensAt     *time.Time
 	ClosesAt    *time.Time
-	Tags        []string
 	Options     []*UpsertPostOptionRequest
 }
 
@@ -145,7 +143,6 @@ func (s *srv) GetPostsByFilter(
 			OpensAt:     p.OpensAt,
 			ClosesAt:    p.ClosesAt,
 			AuthorID:    p.AuthorID,
-			Tags:        p.Tags,
 			OptionIDs:   p.OptionIDs,
 			VoteIDs:     p.VoteIDs,
 			CreatedAt:   p.CreatedAt,
@@ -279,20 +276,6 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		if len(optionsToInsert) > 0 {
 			if err = insertPostOptions(ctx, tx, optionsToInsert); err != nil {
 				return fmt.Errorf("inserting options: %w", err)
-			}
-		}
-
-		tagsToInsert := []postTag{}
-		for _, tag := range request.Tags {
-			tagsToInsert = append(tagsToInsert, postTag{
-				PostID: postToUpsert.ID,
-				Tag:    tag,
-			})
-		}
-
-		if len(tagsToInsert) > 0 {
-			if err = upsertPostTags(ctx, tx, tagsToInsert); err != nil {
-				return fmt.Errorf("inserting tags: %w", err)
 			}
 		}
 
@@ -481,40 +464,6 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 	if len(optionsToInsert) > 0 {
 		if err = insertPostOptions(ctx, tx, optionsToInsert); err != nil {
 			return fmt.Errorf("inserting options: %w", err)
-		}
-	}
-
-	tagsToUpsert := []postTag{}
-	for _, tag := range request.Tags {
-		tagsToUpsert = append(tagsToUpsert, postTag{
-			PostID: postToUpsert.ID,
-			Tag:    tag,
-		})
-	}
-
-	if len(tagsToUpsert) > 0 {
-		if err = upsertPostTags(ctx, tx, tagsToUpsert); err != nil {
-			return fmt.Errorf("upserting tags: %w", err)
-		}
-	}
-
-	tagsToDelete := []string{}
-	for _, eTag := range existingPost.Tags {
-		tagFound := false
-		for _, nTag := range request.Tags {
-			if nTag == eTag {
-				tagFound = true
-				break
-			}
-		}
-		if !tagFound {
-			tagsToDelete = append(tagsToDelete, eTag)
-		}
-	}
-
-	if len(tagsToDelete) > 0 {
-		if err = deletePostTags(ctx, tx, request.ID, tagsToDelete); err != nil {
-			return fmt.Errorf("deleting tags from post: %w", err)
 		}
 	}
 
