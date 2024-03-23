@@ -29,7 +29,7 @@ type Post struct {
 	DesignPhase *DesignPhase
 	Context     *string
 	Category    *PostCategory
-	LiveAt      *time.Time
+	OpensAt     *time.Time
 	ClosesAt    *time.Time
 	AuthorID    uuid.UUID
 	Tags        []string
@@ -56,7 +56,7 @@ type UpsertPostRequest struct {
 	DesignPhase *DesignPhase
 	Context     *string
 	Category    *PostCategory
-	LiveAt      *time.Time
+	OpensAt     *time.Time
 	ClosesAt    *time.Time
 	Tags        []string
 	Options     []*UpsertPostOptionRequest
@@ -89,9 +89,11 @@ var ErrTooFewOptions = errors.New("at least 2 options are required to create a p
 
 var ErrPostNotOwned = errors.New("post with id already authored by another user")
 
-var ErrLiveAtAlreadyPassed = errors.New("live at time has already passed")
+var ErrOpensAtAlreadyPassed = errors.New("live at time has already passed")
 
-var ErrNotOpenForLongEnough = errors.New("post must be open for at least 1 hour")
+var ErrOptionFileImmutable = errors.New("options file cannot be changed")
+
+var ErrClosesAtNotAfterOpensAt = errors.New("post close time must be after open time")
 
 var ErrFileTooLarge = errors.New("file must not be larger than 5MB")
 
@@ -134,7 +136,7 @@ func (s *srv) GetPostsByFilter(
 			DesignPhase: p.DesignPhase,
 			Context:     p.Context,
 			Category:    p.Category,
-			LiveAt:      p.LiveAt,
+			OpensAt:     p.OpensAt,
 			ClosesAt:    p.ClosesAt,
 			AuthorID:    p.AuthorID,
 			Tags:        p.Tags,
@@ -166,32 +168,32 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		existingPost = &posts[0]
 	}
 
-	postToUpsert := upsertPostParams{
-		ID:          request.ID,
-		AuthorID:    request.AuthorID,
-		DesignPhase: request.DesignPhase,
-		Context:     request.Context,
-		Category:    request.Category,
-		LiveAt:      request.LiveAt,
-		ClosesAt:    request.ClosesAt,
-	}
 	if existingPost == nil {
-		if postToUpsert.LiveAt != nil &&
-			postToUpsert.LiveAt.Before(time.Now().Add(-time.Minute*10)) {
-			return ErrLiveAtAlreadyPassed
+		postToUpsert := upsertPostParams{
+			ID:          request.ID,
+			AuthorID:    request.AuthorID,
+			DesignPhase: request.DesignPhase,
+			Context:     request.Context,
+			Category:    request.Category,
+			OpensAt:     request.OpensAt,
+			ClosesAt:    request.ClosesAt,
+		}
+		if postToUpsert.OpensAt != nil &&
+			postToUpsert.OpensAt.Before(time.Now().Add(-time.Minute*10)) {
+			return ErrOpensAtAlreadyPassed
 		}
 
-		if postToUpsert.LiveAt != nil &&
+		if postToUpsert.OpensAt != nil &&
 			postToUpsert.ClosesAt != nil &&
-			postToUpsert.ClosesAt.Sub(*postToUpsert.LiveAt) < time.Hour {
-			return ErrNotOpenForLongEnough
+			postToUpsert.ClosesAt.Before(*postToUpsert.OpensAt) {
+			return ErrClosesAtNotAfterOpensAt
 		}
 
 		if len(request.Options) > 6 {
 			return ErrTooManyOptions
 		}
 
-		postWillBeLive := postToUpsert.LiveAt != nil && postToUpsert.LiveAt.Before(time.Now())
+		postWillBeLive := postToUpsert.OpensAt != nil && postToUpsert.OpensAt.Before(time.Now())
 
 		if postWillBeLive && len(request.Options) < 2 {
 			return ErrTooFewOptions
@@ -263,7 +265,7 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			}(fileRef, *o.File)
 		}
 
-		if err = insertPost(ctx, tx, postToUpsert); err != nil {
+		if err = upsertPost(ctx, tx, postToUpsert); err != nil {
 			return fmt.Errorf("inserting post: %w", err)
 		}
 
@@ -282,7 +284,7 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		}
 
 		if len(tagsToInsert) > 0 {
-			if err = insertPostTags(ctx, tx, tagsToInsert); err != nil {
+			if err = upsertPostTags(ctx, tx, tagsToInsert); err != nil {
 				return fmt.Errorf("inserting tags: %w", err)
 			}
 		}
@@ -294,7 +296,226 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		return nil
 	}
 
-	panic("update case not implemeted")
+	postToUpsert := upsertPostParams{
+		ID:          existingPost.ID,
+		AuthorID:    existingPost.AuthorID,
+		DesignPhase: existingPost.DesignPhase,
+		Context:     existingPost.Context,
+		Category:    existingPost.Category,
+		OpensAt:     existingPost.OpensAt,
+		ClosesAt:    existingPost.ClosesAt,
+	}
+
+	if request.AuthorID != existingPost.AuthorID {
+		return ErrPostNotOwned
+	}
+
+	if !existingPost.OpensAt.After(time.Now()) {
+		return ErrOpensAtAlreadyPassed
+	}
+
+	if postToUpsert.OpensAt != nil &&
+		postToUpsert.OpensAt.Before(time.Now().Add(-time.Minute*10)) {
+		return ErrOpensAtAlreadyPassed
+	}
+
+	if postToUpsert.OpensAt != nil &&
+		postToUpsert.ClosesAt != nil &&
+		postToUpsert.ClosesAt.Before(*postToUpsert.OpensAt) {
+		return ErrClosesAtNotAfterOpensAt
+	}
+
+	postWillBeLive := postToUpsert.OpensAt != nil && postToUpsert.OpensAt.Before(time.Now())
+
+	if postWillBeLive && request.ClosesAt == nil {
+		return ErrClosesAtNotSet
+	}
+
+	if request.Category != nil {
+		postToUpsert.Category = request.Category
+	}
+	if request.ClosesAt != nil {
+		postToUpsert.ClosesAt = request.ClosesAt
+	}
+	if request.DesignPhase != nil {
+		postToUpsert.DesignPhase = request.DesignPhase
+	}
+	if request.Context != nil {
+		postToUpsert.Context = request.Context
+	}
+	if request.OpensAt != nil {
+		postToUpsert.OpensAt = request.OpensAt
+	}
+
+	if postWillBeLive && len(request.Options) < 2 {
+		return ErrTooFewOptions
+	}
+
+	if len(request.Options) > 6 {
+		return ErrTooManyOptions
+	}
+
+	for i := 1; i <= len(request.Options); i++ {
+		optionFound := false
+		for _, o := range request.Options {
+			if o.Position == i {
+				optionFound = true
+				break
+			}
+		}
+		if !optionFound {
+			return ErrOptionPositionsInvalid
+		}
+	}
+
+	existingOptions, err := getPostOptionsByFilter(
+		ctx, tx, getPostOptionsByFilterParams{
+			IDs: existingPost.OptionIDs,
+		}, DBLockForUpdate,
+	)
+	if err != nil {
+		return fmt.Errorf("getting post options: %w")
+	}
+
+	optionIDsToDelete := []uuid.UUID{}
+	optionsToUpdate := []updatePostOption{}
+	for _, eo := range existingOptions {
+		deleteExistingOption := true
+		for _, no := range request.Options {
+			if eo.ID == no.ID {
+				deleteExistingOption = false
+				if no.File != nil {
+					return ErrOptionFileImmutable
+				}
+				if eo.Position != no.Position {
+					optionsToUpdate = append(optionsToUpdate, updatePostOption{
+						ID:       eo.ID,
+						Position: no.Position,
+					})
+				}
+			}
+		}
+		if deleteExistingOption {
+			optionIDsToDelete = append(optionIDsToDelete, eo.ID)
+		}
+	}
+
+	wg := sync.WaitGroup{}
+	optionsToInsert := []postOption{}
+	for _, o := range request.Options {
+		if o.File == nil {
+			existingOptionFound := false
+			for _, eo := range existingOptions {
+				if eo.ID == o.ID {
+					existingOptionFound = true
+					break
+				}
+			}
+			if !existingOptionFound {
+				return ErrOptionFileRequired
+			}
+		}
+
+		if o.File.Size > (5 << 20) {
+			return ErrFileTooLarge
+		}
+
+		var fileRef string
+		switch o.File.ContentType {
+		case "image/jpeg":
+			fileRef = fmt.Sprintf(
+				// "https://storage.cloud.google.com/%s/post-options/%s.jpeg", here is the url for later
+				"%s/post-options/%s.jpeg",
+				s.bucketName, o.ID,
+			)
+		case "image/png":
+			fileRef = fmt.Sprintf(
+				"%s/post-options/%s.png",
+				s.bucketName, o.ID,
+			)
+		case "image/gif":
+			fileRef = fmt.Sprintf(
+				"%s/post-options/%s.gif",
+				s.bucketName, o.ID,
+			)
+		default:
+			return ErrUnsupportedFileType
+		}
+		optionsToInsert = append(optionsToInsert, postOption{
+			ID:       o.ID,
+			PostID:   postToUpsert.ID,
+			Position: o.Position,
+			FileRef:  fileRef,
+		})
+		wg.Add(1)
+		go func(ref string, file Upload) {
+			defer wg.Done()
+			s.addObjToBucket(ctx, ref, file)
+		}(fileRef, *o.File)
+	}
+
+	if err = upsertPost(ctx, tx, postToUpsert); err != nil {
+		return fmt.Errorf("inserting post: %w", err)
+	}
+
+	if len(optionIDsToDelete) > 0 {
+		// todo: probs want a cron to delete dangly files in bucket
+		if err = deletePostOptions(ctx, tx, optionIDsToDelete); err != nil {
+			return fmt.Errorf("deleting post options: %w", err)
+		}
+	}
+
+	if len(optionsToUpdate) > 0 {
+		if err = updatePostOptionPositions(ctx, tx, optionsToUpdate); err != nil {
+			return fmt.Errorf("updating post option positions: %w", err)
+		}
+	}
+
+	if len(optionsToInsert) > 0 {
+		if err = insertPostOptions(ctx, tx, optionsToInsert); err != nil {
+			return fmt.Errorf("inserting options: %w", err)
+		}
+	}
+
+	tagsToUpsert := []postTag{}
+	for _, tag := range request.Tags {
+		tagsToUpsert = append(tagsToUpsert, postTag{
+			PostID: postToUpsert.ID,
+			Tag:    tag,
+		})
+	}
+
+	if len(tagsToUpsert) > 0 {
+		if err = upsertPostTags(ctx, tx, tagsToUpsert); err != nil {
+			return fmt.Errorf("upserting tags: %w", err)
+		}
+	}
+
+	tagsToDelete := []string{}
+	for _, eTag := range existingPost.Tags {
+		tagFound := false
+		for _, nTag := range request.Tags {
+			if nTag == eTag {
+				tagFound = true
+				break
+			}
+		}
+		if !tagFound {
+			tagsToDelete = append(tagsToDelete, eTag)
+		}
+	}
+
+	if len(tagsToDelete) > 0 {
+		if err = deletePostTags(ctx, tx, request.ID, tagsToDelete); err != nil {
+			return fmt.Errorf("deleting tags from post: %w", err)
+		}
+	}
+
+	wg.Wait()
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("comitting tx: %w", err)
+	}
+	return nil
 }
 
 func (s *srv) GetOptionsByFilter(

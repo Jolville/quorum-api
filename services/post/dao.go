@@ -39,7 +39,7 @@ type post struct {
 	DesignPhase *DesignPhase       `db:"design_phase"`
 	Context     *string            `db:"context"`
 	Category    *PostCategory      `db:"category"`
-	LiveAt      *time.Time         `db:"live_at"`
+	OpensAt     *time.Time         `db:"opens_at"`
 	ClosesAt    *time.Time         `db:"closes_at"`
 	AuthorID    uuid.UUID          `db:"author_id"`
 	Tags        []string           `db:"tags"`
@@ -62,7 +62,7 @@ func getPostsByFilter(
 			post.category,
 			post.created_at,
 			post.updated_at,
-			post.live_at,
+			post.opens_at,
 			post.closes_at,
 			array_agg(po.id) option_ids,
 			array_agg(pv.id) vote_ids,
@@ -88,9 +88,9 @@ func getPostsByFilter(
 			post.category,
 			post.created_at,
 			post.updated_at,
-			post.live_at,
+			post.opens_at,
 			post.closes_at
-		order by post.live_at desc
+		order by post.opens_at desc
 	%s`, query, dbLock)
 
 	if err := db.SelectContext(ctx, &posts, query, args...); err != nil {
@@ -156,11 +156,11 @@ type upsertPostParams struct {
 	DesignPhase *DesignPhase  `db:"design_phase"`
 	Context     *string       `db:"context"`
 	Category    *PostCategory `db:"category"`
-	LiveAt      *time.Time    `db:"live_at"`
+	OpensAt     *time.Time    `db:"opens_at"`
 	ClosesAt    *time.Time    `db:"closes_at"`
 }
 
-func insertPost(
+func upsertPost(
 	ctx context.Context,
 	db database.Q,
 	params upsertPostParams,
@@ -172,7 +172,7 @@ func insertPost(
 			design_phase,
 			context,
 			category,
-			live_at,
+			opens_at,
 			closes_at
 		) values (
 			:id,
@@ -180,9 +180,16 @@ func insertPost(
 			:design_phase,
 			:context,
 			:category,
-			:live_at,
+			:opens_at,
 			:closes_at
-		)
+		) on conflict (id) do update set
+			updated_at = now(),
+			design_phase = excluded.design_phase,
+			context = excluded.context,
+			category = excluded.category,
+			opens_at = excluded.opens_at,
+			closes_at = excluded.closes_at
+
 	`, params); err != nil {
 		return fmt.Errorf("inserting post: %w", err)
 	}
@@ -194,7 +201,7 @@ type postTag struct {
 	Tag    string    `db:"tag"`
 }
 
-func insertPostTags(
+func upsertPostTags(
 	ctx context.Context,
 	db database.Q,
 	postTags []postTag,
@@ -208,7 +215,34 @@ func insertPostTags(
 			:tag
 		) on conflict do nothing
 	`, postTags); err != nil {
-		return fmt.Errorf("inserting post: %w", err)
+		return fmt.Errorf("inserting post_tag: %w", err)
+	}
+	return nil
+}
+
+func deletePostTags(
+	ctx context.Context,
+	db database.Q,
+	postID uuid.UUID,
+	tags []string,
+) error {
+	if _, err := db.ExecContext(ctx, `
+		delete from post_tag where post_id = $1 and tag = any($2)
+		`, postID, tags); err != nil {
+		return fmt.Errorf("deleting from post_tag: %w", err)
+	}
+	return nil
+}
+
+func deletePostOptions(
+	ctx context.Context,
+	db database.Q,
+	postOptionIDs database.UUIDSlice,
+) error {
+	if _, err := db.ExecContext(ctx, `
+		delete from post_option where id = any($1)
+		`, postOptionIDs); err != nil {
+		return fmt.Errorf("deleting from post_option: %w", err)
 	}
 	return nil
 }
@@ -232,6 +266,38 @@ func insertPostOptions(
 		)
 	`, postOptions); err != nil {
 		return fmt.Errorf("inserting post: %w", err)
+	}
+	return nil
+}
+
+type updatePostOption struct {
+	ID       uuid.UUID `db:"id"`
+	Position int       `db:"position"`
+}
+
+func updatePostOptionPositions(
+	ctx context.Context,
+	db database.Q,
+	postOptions []updatePostOption,
+) error {
+	values := []string{}
+	ids := database.UUIDSlice{}
+	for _, po := range postOptions {
+		values = append(values, fmt.Sprintf("(%v, %v)", po.ID, po.Position))
+		ids = append(ids, po.ID)
+	}
+	query := fmt.Sprintf(`
+		with post_option_update(post_option_id, position) as (values(%s))
+		update post_option
+			set position = (
+				select post_option_update.position
+				from post_option_update
+				where post_option_update.id = post_option.id
+			)
+		where id = any($1)`, ids,
+	)
+	if _, err := db.ExecContext(ctx, query, ids); err != nil {
+		return fmt.Errorf("updating post_option: %w", err)
 	}
 	return nil
 }

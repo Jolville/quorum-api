@@ -58,6 +58,11 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
+	ClosesAtNotAfterOpensAtError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	Customer struct {
 		Email      func(childComplexity int) int
 		FirstName  func(childComplexity int) int
@@ -100,11 +105,6 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
-	LiveAtAlreadyPassedError struct {
-		Message func(childComplexity int) int
-		Path    func(childComplexity int) int
-	}
-
 	Mutation struct {
 		GetLoginLink        func(childComplexity int, input model.GetLoginLinkInput) int
 		SignUp              func(childComplexity int, input model.SignUpInput) int
@@ -112,7 +112,7 @@ type ComplexityRoot struct {
 		VerifyCustomerToken func(childComplexity int, input model.VerifyCustomerTokenInput) int
 	}
 
-	NotOpenForLongEnoughError struct {
+	OpensAtAlreadyPassedError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
@@ -124,7 +124,7 @@ type ComplexityRoot struct {
 		Context     func(childComplexity int) int
 		DesignPhase func(childComplexity int) int
 		ID          func(childComplexity int) int
-		LiveAt      func(childComplexity int) int
+		OpensAt     func(childComplexity int) int
 		Options     func(childComplexity int) int
 		Status      func(childComplexity int) int
 		Tags        func(childComplexity int) int
@@ -238,6 +238,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AuthorUnknownError.Path(childComplexity), true
+
+	case "ClosesAtNotAfterOpensAtError.message":
+		if e.complexity.ClosesAtNotAfterOpensAtError.Message == nil {
+			break
+		}
+
+		return e.complexity.ClosesAtNotAfterOpensAtError.Message(childComplexity), true
+
+	case "ClosesAtNotAfterOpensAtError.path":
+		if e.complexity.ClosesAtNotAfterOpensAtError.Path == nil {
+			break
+		}
+
+		return e.complexity.ClosesAtNotAfterOpensAtError.Path(childComplexity), true
 
 	case "Customer.email":
 		if e.complexity.Customer.Email == nil {
@@ -365,20 +379,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LinkExpiredError.Path(childComplexity), true
 
-	case "LiveAtAlreadyPassedError.message":
-		if e.complexity.LiveAtAlreadyPassedError.Message == nil {
-			break
-		}
-
-		return e.complexity.LiveAtAlreadyPassedError.Message(childComplexity), true
-
-	case "LiveAtAlreadyPassedError.path":
-		if e.complexity.LiveAtAlreadyPassedError.Path == nil {
-			break
-		}
-
-		return e.complexity.LiveAtAlreadyPassedError.Path(childComplexity), true
-
 	case "Mutation.getLoginLink":
 		if e.complexity.Mutation.GetLoginLink == nil {
 			break
@@ -427,19 +427,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.VerifyCustomerToken(childComplexity, args["input"].(model.VerifyCustomerTokenInput)), true
 
-	case "NotOpenForLongEnoughError.message":
-		if e.complexity.NotOpenForLongEnoughError.Message == nil {
+	case "OpensAtAlreadyPassedError.message":
+		if e.complexity.OpensAtAlreadyPassedError.Message == nil {
 			break
 		}
 
-		return e.complexity.NotOpenForLongEnoughError.Message(childComplexity), true
+		return e.complexity.OpensAtAlreadyPassedError.Message(childComplexity), true
 
-	case "NotOpenForLongEnoughError.path":
-		if e.complexity.NotOpenForLongEnoughError.Path == nil {
+	case "OpensAtAlreadyPassedError.path":
+		if e.complexity.OpensAtAlreadyPassedError.Path == nil {
 			break
 		}
 
-		return e.complexity.NotOpenForLongEnoughError.Path(childComplexity), true
+		return e.complexity.OpensAtAlreadyPassedError.Path(childComplexity), true
 
 	case "Post.author":
 		if e.complexity.Post.Author == nil {
@@ -483,12 +483,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.ID(childComplexity), true
 
-	case "Post.liveAt":
-		if e.complexity.Post.LiveAt == nil {
+	case "Post.opensAt":
+		if e.complexity.Post.OpensAt == nil {
 			break
 		}
 
-		return e.complexity.Post.LiveAt(childComplexity), true
+		return e.complexity.Post.OpensAt(childComplexity), true
 
 	case "Post.options":
 		if e.complexity.Post.Options == nil {
@@ -1002,6 +1002,91 @@ func (ec *executionContext) _AuthorUnknownError_path(ctx context.Context, field 
 func (ec *executionContext) fieldContext_AuthorUnknownError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthorUnknownError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClosesAtNotAfterOpensAtError_message(ctx context.Context, field graphql.CollectedField, obj *model.ClosesAtNotAfterOpensAtError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ClosesAtNotAfterOpensAtError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ClosesAtNotAfterOpensAtError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClosesAtNotAfterOpensAtError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClosesAtNotAfterOpensAtError_path(ctx context.Context, field graphql.CollectedField, obj *model.ClosesAtNotAfterOpensAtError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ClosesAtNotAfterOpensAtError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ClosesAtNotAfterOpensAtError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClosesAtNotAfterOpensAtError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -1777,91 +1862,6 @@ func (ec *executionContext) fieldContext_LinkExpiredError_path(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _LiveAtAlreadyPassedError_message(ctx context.Context, field graphql.CollectedField, obj *model.LiveAtAlreadyPassedError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LiveAtAlreadyPassedError_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LiveAtAlreadyPassedError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LiveAtAlreadyPassedError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LiveAtAlreadyPassedError_path(ctx context.Context, field graphql.CollectedField, obj *model.LiveAtAlreadyPassedError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LiveAtAlreadyPassedError_path(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LiveAtAlreadyPassedError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LiveAtAlreadyPassedError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_signUp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_signUp(ctx, field)
 	if err != nil {
@@ -2104,8 +2104,8 @@ func (ec *executionContext) fieldContext_Mutation_upsertPost(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _NotOpenForLongEnoughError_message(ctx context.Context, field graphql.CollectedField, obj *model.NotOpenForLongEnoughError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_NotOpenForLongEnoughError_message(ctx, field)
+func (ec *executionContext) _OpensAtAlreadyPassedError_message(ctx context.Context, field graphql.CollectedField, obj *model.OpensAtAlreadyPassedError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OpensAtAlreadyPassedError_message(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2135,9 +2135,9 @@ func (ec *executionContext) _NotOpenForLongEnoughError_message(ctx context.Conte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_NotOpenForLongEnoughError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OpensAtAlreadyPassedError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "NotOpenForLongEnoughError",
+		Object:     "OpensAtAlreadyPassedError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2148,8 +2148,8 @@ func (ec *executionContext) fieldContext_NotOpenForLongEnoughError_message(ctx c
 	return fc, nil
 }
 
-func (ec *executionContext) _NotOpenForLongEnoughError_path(ctx context.Context, field graphql.CollectedField, obj *model.NotOpenForLongEnoughError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_NotOpenForLongEnoughError_path(ctx, field)
+func (ec *executionContext) _OpensAtAlreadyPassedError_path(ctx context.Context, field graphql.CollectedField, obj *model.OpensAtAlreadyPassedError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OpensAtAlreadyPassedError_path(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2176,9 +2176,9 @@ func (ec *executionContext) _NotOpenForLongEnoughError_path(ctx context.Context,
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_NotOpenForLongEnoughError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OpensAtAlreadyPassedError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "NotOpenForLongEnoughError",
+		Object:     "OpensAtAlreadyPassedError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2356,8 +2356,8 @@ func (ec *executionContext) fieldContext_Post_category(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Post_liveAt(ctx context.Context, field graphql.CollectedField, obj *srvpost.Post) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Post_liveAt(ctx, field)
+func (ec *executionContext) _Post_opensAt(ctx context.Context, field graphql.CollectedField, obj *srvpost.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_opensAt(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2370,7 +2370,7 @@ func (ec *executionContext) _Post_liveAt(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.LiveAt, nil
+		return obj.OpensAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2384,7 +2384,7 @@ func (ec *executionContext) _Post_liveAt(ctx context.Context, field graphql.Coll
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Post_liveAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Post_opensAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Post",
 		Field:      field,
@@ -2893,8 +2893,8 @@ func (ec *executionContext) fieldContext_PostVote_post(ctx context.Context, fiel
 				return ec.fieldContext_Post_context(ctx, field)
 			case "category":
 				return ec.fieldContext_Post_category(ctx, field)
-			case "liveAt":
-				return ec.fieldContext_Post_liveAt(ctx, field)
+			case "opensAt":
+				return ec.fieldContext_Post_opensAt(ctx, field)
 			case "closesAt":
 				return ec.fieldContext_Post_closesAt(ctx, field)
 			case "author":
@@ -3105,8 +3105,8 @@ func (ec *executionContext) fieldContext_Query_post(ctx context.Context, field g
 				return ec.fieldContext_Post_context(ctx, field)
 			case "category":
 				return ec.fieldContext_Post_category(ctx, field)
-			case "liveAt":
-				return ec.fieldContext_Post_liveAt(ctx, field)
+			case "opensAt":
+				return ec.fieldContext_Post_opensAt(ctx, field)
 			case "closesAt":
 				return ec.fieldContext_Post_closesAt(ctx, field)
 			case "author":
@@ -3609,8 +3609,8 @@ func (ec *executionContext) fieldContext_UpsertPostPayload_post(ctx context.Cont
 				return ec.fieldContext_Post_context(ctx, field)
 			case "category":
 				return ec.fieldContext_Post_category(ctx, field)
-			case "liveAt":
-				return ec.fieldContext_Post_liveAt(ctx, field)
+			case "opensAt":
+				return ec.fieldContext_Post_opensAt(ctx, field)
 			case "closesAt":
 				return ec.fieldContext_Post_closesAt(ctx, field)
 			case "author":
@@ -5681,7 +5681,7 @@ func (ec *executionContext) unmarshalInputUpsertPostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "designPhase", "context", "category", "liveAt", "closesAt", "tags", "options"}
+	fieldsInOrder := [...]string{"id", "designPhase", "context", "category", "opensAt", "closesAt", "tags", "options"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5716,13 +5716,13 @@ func (ec *executionContext) unmarshalInputUpsertPostInput(ctx context.Context, o
 				return it, err
 			}
 			it.Category = data
-		case "liveAt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("liveAt"))
+		case "opensAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("opensAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LiveAt = data
+			it.OpensAt = data
 		case "closesAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("closesAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -5882,20 +5882,20 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._AuthorUnknownError(ctx, sel, obj)
-	case model.LiveAtAlreadyPassedError:
-		return ec._LiveAtAlreadyPassedError(ctx, sel, &obj)
-	case *model.LiveAtAlreadyPassedError:
+	case model.OpensAtAlreadyPassedError:
+		return ec._OpensAtAlreadyPassedError(ctx, sel, &obj)
+	case *model.OpensAtAlreadyPassedError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._LiveAtAlreadyPassedError(ctx, sel, obj)
-	case model.NotOpenForLongEnoughError:
-		return ec._NotOpenForLongEnoughError(ctx, sel, &obj)
-	case *model.NotOpenForLongEnoughError:
+		return ec._OpensAtAlreadyPassedError(ctx, sel, obj)
+	case model.ClosesAtNotAfterOpensAtError:
+		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, &obj)
+	case *model.ClosesAtNotAfterOpensAtError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._NotOpenForLongEnoughError(ctx, sel, obj)
+		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, obj)
 	case model.FileTooLargeError:
 		return ec._FileTooLargeError(ctx, sel, &obj)
 	case *model.FileTooLargeError:
@@ -6000,20 +6000,20 @@ func (ec *executionContext) _UpsertPostError(ctx context.Context, sel ast.Select
 			return graphql.Null
 		}
 		return ec._AuthorUnknownError(ctx, sel, obj)
-	case model.LiveAtAlreadyPassedError:
-		return ec._LiveAtAlreadyPassedError(ctx, sel, &obj)
-	case *model.LiveAtAlreadyPassedError:
+	case model.OpensAtAlreadyPassedError:
+		return ec._OpensAtAlreadyPassedError(ctx, sel, &obj)
+	case *model.OpensAtAlreadyPassedError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._LiveAtAlreadyPassedError(ctx, sel, obj)
-	case model.NotOpenForLongEnoughError:
-		return ec._NotOpenForLongEnoughError(ctx, sel, &obj)
-	case *model.NotOpenForLongEnoughError:
+		return ec._OpensAtAlreadyPassedError(ctx, sel, obj)
+	case model.ClosesAtNotAfterOpensAtError:
+		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, &obj)
+	case *model.ClosesAtNotAfterOpensAtError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._NotOpenForLongEnoughError(ctx, sel, obj)
+		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, obj)
 	case model.FileTooLargeError:
 		return ec._FileTooLargeError(ctx, sel, &obj)
 	case *model.FileTooLargeError:
@@ -6071,6 +6071,47 @@ func (ec *executionContext) _AuthorUnknownError(ctx context.Context, sel ast.Sel
 			}
 		case "path":
 			out.Values[i] = ec._AuthorUnknownError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var closesAtNotAfterOpensAtErrorImplementors = []string{"ClosesAtNotAfterOpensAtError", "BaseError", "UpsertPostError"}
+
+func (ec *executionContext) _ClosesAtNotAfterOpensAtError(ctx context.Context, sel ast.SelectionSet, obj *model.ClosesAtNotAfterOpensAtError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, closesAtNotAfterOpensAtErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ClosesAtNotAfterOpensAtError")
+		case "message":
+			out.Values[i] = ec._ClosesAtNotAfterOpensAtError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._ClosesAtNotAfterOpensAtError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6429,47 +6470,6 @@ func (ec *executionContext) _LinkExpiredError(ctx context.Context, sel ast.Selec
 	return out
 }
 
-var liveAtAlreadyPassedErrorImplementors = []string{"LiveAtAlreadyPassedError", "BaseError", "UpsertPostError"}
-
-func (ec *executionContext) _LiveAtAlreadyPassedError(ctx context.Context, sel ast.SelectionSet, obj *model.LiveAtAlreadyPassedError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, liveAtAlreadyPassedErrorImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("LiveAtAlreadyPassedError")
-		case "message":
-			out.Values[i] = ec._LiveAtAlreadyPassedError_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "path":
-			out.Values[i] = ec._LiveAtAlreadyPassedError_path(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -6540,24 +6540,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var notOpenForLongEnoughErrorImplementors = []string{"NotOpenForLongEnoughError", "BaseError", "UpsertPostError"}
+var opensAtAlreadyPassedErrorImplementors = []string{"OpensAtAlreadyPassedError", "BaseError", "UpsertPostError"}
 
-func (ec *executionContext) _NotOpenForLongEnoughError(ctx context.Context, sel ast.SelectionSet, obj *model.NotOpenForLongEnoughError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, notOpenForLongEnoughErrorImplementors)
+func (ec *executionContext) _OpensAtAlreadyPassedError(ctx context.Context, sel ast.SelectionSet, obj *model.OpensAtAlreadyPassedError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, opensAtAlreadyPassedErrorImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("NotOpenForLongEnoughError")
+			out.Values[i] = graphql.MarshalString("OpensAtAlreadyPassedError")
 		case "message":
-			out.Values[i] = ec._NotOpenForLongEnoughError_message(ctx, field, obj)
+			out.Values[i] = ec._OpensAtAlreadyPassedError_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		case "path":
-			out.Values[i] = ec._NotOpenForLongEnoughError_path(ctx, field, obj)
+			out.Values[i] = ec._OpensAtAlreadyPassedError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6665,8 +6665,8 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "liveAt":
-			out.Values[i] = ec._Post_liveAt(ctx, field, obj)
+		case "opensAt":
+			out.Values[i] = ec._Post_opensAt(ctx, field, obj)
 		case "closesAt":
 			out.Values[i] = ec._Post_closesAt(ctx, field, obj)
 		case "author":

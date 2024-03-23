@@ -56,6 +56,26 @@ func (this AuthorUnknownError) GetPath() []string {
 
 func (AuthorUnknownError) IsUpsertPostError() {}
 
+type ClosesAtNotAfterOpensAtError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (ClosesAtNotAfterOpensAtError) IsBaseError()            {}
+func (this ClosesAtNotAfterOpensAtError) GetMessage() string { return this.Message }
+func (this ClosesAtNotAfterOpensAtError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (ClosesAtNotAfterOpensAtError) IsUpsertPostError() {}
+
 type CustomerNotFoundError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
@@ -189,37 +209,17 @@ func (this LinkExpiredError) GetPath() []string {
 
 func (LinkExpiredError) IsVerifyCustomerTokenError() {}
 
-type LiveAtAlreadyPassedError struct {
-	Message string   `json:"message"`
-	Path    []string `json:"path,omitempty"`
-}
-
-func (LiveAtAlreadyPassedError) IsBaseError()            {}
-func (this LiveAtAlreadyPassedError) GetMessage() string { return this.Message }
-func (this LiveAtAlreadyPassedError) GetPath() []string {
-	if this.Path == nil {
-		return nil
-	}
-	interfaceSlice := make([]string, 0, len(this.Path))
-	for _, concrete := range this.Path {
-		interfaceSlice = append(interfaceSlice, concrete)
-	}
-	return interfaceSlice
-}
-
-func (LiveAtAlreadyPassedError) IsUpsertPostError() {}
-
 type Mutation struct {
 }
 
-type NotOpenForLongEnoughError struct {
+type OpensAtAlreadyPassedError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
 }
 
-func (NotOpenForLongEnoughError) IsBaseError()            {}
-func (this NotOpenForLongEnoughError) GetMessage() string { return this.Message }
-func (this NotOpenForLongEnoughError) GetPath() []string {
+func (OpensAtAlreadyPassedError) IsBaseError()            {}
+func (this OpensAtAlreadyPassedError) GetMessage() string { return this.Message }
+func (this OpensAtAlreadyPassedError) GetPath() []string {
 	if this.Path == nil {
 		return nil
 	}
@@ -230,7 +230,7 @@ func (this NotOpenForLongEnoughError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (NotOpenForLongEnoughError) IsUpsertPostError() {}
+func (OpensAtAlreadyPassedError) IsUpsertPostError() {}
 
 type Query struct {
 }
@@ -312,7 +312,7 @@ type UpsertPostInput struct {
 	DesignPhase *DesignPhase             `json:"designPhase,omitempty"`
 	Context     *string                  `json:"context,omitempty"`
 	Category    *PostCategory            `json:"category,omitempty"`
-	LiveAt      *time.Time               `json:"liveAt,omitempty"`
+	OpensAt     *time.Time               `json:"opensAt,omitempty"`
 	ClosesAt    *time.Time               `json:"closesAt,omitempty"`
 	Tags        []string                 `json:"tags"`
 	Options     []*UpsertPostOptionInput `json:"options"`

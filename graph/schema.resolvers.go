@@ -247,24 +247,15 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 		Options:     options,
 		DesignPhase: (*srvpost.DesignPhase)(input.DesignPhase),
 		Category:    (*srvpost.PostCategory)(input.Category),
-		LiveAt:      input.LiveAt,
+		OpensAt:     input.OpensAt,
 		ClosesAt:    input.ClosesAt,
 		Tags:        input.Tags,
 		AuthorID:    verifiedCustomer.UUID,
 	})
-	if errors.Is(err, srvpost.ErrLiveAtAlreadyPassed) {
+	if errors.Is(err, srvpost.ErrOpensAtAlreadyPassed) {
 		return &model.UpsertPostPayload{
 			Errors: []model.UpsertPostError{
-				model.LiveAtAlreadyPassedError{
-					Message: err.Error(),
-				},
-			},
-		}, nil
-	}
-	if errors.Is(err, srvpost.ErrNotOpenForLongEnough) {
-		return &model.UpsertPostPayload{
-			Errors: []model.UpsertPostError{
-				model.NotOpenForLongEnoughError{
+				model.OpensAtAlreadyPassedError{
 					Message: err.Error(),
 				},
 			},
@@ -315,6 +306,7 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 			},
 		}, nil
 	}
+	// todo handle the other known errors
 	if err != nil {
 		return nil, fmt.Errorf("creating post: %w", err)
 	}
@@ -369,10 +361,10 @@ func (r *postResolver) Votes(ctx context.Context, obj *srvpost.Post) ([]*srvpost
 
 // Status is the resolver for the status field.
 func (r *postResolver) Status(ctx context.Context, obj *srvpost.Post) (model.PostStatus, error) {
-	if obj == nil || obj.LiveAt == nil || obj.ClosesAt == nil {
+	if obj == nil || obj.OpensAt == nil || obj.ClosesAt == nil {
 		return model.PostStatusDraft, nil
 	}
-	if obj.LiveAt.After(time.Now()) {
+	if obj.OpensAt.After(time.Now()) {
 		return model.PostStatusDraft, nil
 	}
 	if obj.ClosesAt.After(time.Now()) {

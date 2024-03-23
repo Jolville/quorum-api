@@ -115,12 +115,12 @@ type AuthorUnknownError implements BaseError {
   path: [String!]
 }
 
-type LiveAtAlreadyPassedError implements BaseError {
+type OpensAtAlreadyPassedError implements BaseError {
   message: String!
   path: [String!]
 }
 
-type NotOpenForLongEnoughError implements BaseError {
+type ClosesAtNotAfterOpensAtError implements BaseError {
   message: String!
   path: [String!]
 }
@@ -140,8 +140,8 @@ union UpsertPostError =
   | TooFewOptionsError
   | ErrPostNotOwned
   | AuthorUnknownError
-  | LiveAtAlreadyPassedError
-  | NotOpenForLongEnoughError
+  | OpensAtAlreadyPassedError
+  | ClosesAtNotAfterOpensAtError
   | FileTooLargeError
   | UnsupportedFileTypeError
 
@@ -165,7 +165,7 @@ type Post {
   designPhase: DesignPhase
   context: String
   category: PostCategory
-  liveAt: Time
+  opensAt: Time
   closesAt: Time
   author: Customer
   tags: [String!]
@@ -193,7 +193,7 @@ input UpsertPostInput {
   designPhase: DesignPhase
   context: String
   category: PostCategory
-  liveAt: Time
+  opensAt: Time
   closesAt: Time
   tags: [String!]!
   options: [UpsertPostOptionInput!]!

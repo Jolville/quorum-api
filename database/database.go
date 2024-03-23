@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"log"
 	"net"
@@ -118,4 +119,12 @@ func (u *UUIDSlice) Scan(src interface{}) error {
 
 func (u *UUIDSlice) Slice() []uuid.UUID {
 	return []uuid.UUID(*u)
+}
+
+func (u *UUIDSlice) Value() (driver.Value, error) {
+	idStrings := []string{}
+	for _, id := range *u {
+		idStrings = append(idStrings, id.String())
+	}
+	return fmt.Sprintf("'{%s}'", strings.Join(idStrings, ",")), nil
 }
