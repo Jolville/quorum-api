@@ -24,11 +24,11 @@ dbdown:
 
 .PHONY: migration
 migration:
-	migrate create -ext ".sql" -dir migrations $(name)
+	migrate create -ext ".sql" -dir migrations $(name) && rm migrations/**.down.sql
 
-.PHONY: migrate # d (direction) == "up"|"down"
+.PHONY: migrate
 migrate:
-	migrate -source file://migrations -database postgres://postgres:jesse@localhost:5432/quorum?sslmode=disable $(d)
+	migrate -source file://migrations -database postgres://postgres:jesse@localhost:5432/quorum?sslmode=disable up
 
 .PHONY: dockerbuild
 dockerbuild:
