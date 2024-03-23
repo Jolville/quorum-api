@@ -31,7 +31,7 @@ const (
 )
 
 type getPostsByFilterParams struct {
-	IDs []uuid.UUID
+	IDs database.UUIDSlice
 }
 
 type post struct {
@@ -101,8 +101,8 @@ func getPostsByFilter(
 }
 
 type getPostOptionsByFilterParams struct {
-	IDs     []uuid.UUID
-	PostIDs []uuid.UUID
+	IDs     database.UUIDSlice
+	PostIDs database.UUIDSlice
 }
 
 type postOption struct {
@@ -148,6 +148,51 @@ func getPostOptionsByFilter(
 	}
 
 	return postOptions, nil
+}
+
+type getPostVotesByFilterParams struct {
+	IDs database.UUIDSlice
+}
+
+type postVote struct {
+	ID           uuid.UUID `db:"id"`
+	PostID       uuid.UUID `db:"post_id"`
+	CustomerID   uuid.UUID `db:"voter_id"`
+	PostOptionID uuid.UUID `db:"post_option_id"`
+	Reason       *string   `db:"reason"`
+}
+
+func getPostVotesByFilter(
+	ctx context.Context,
+	db database.Q,
+	params getPostVotesByFilterParams,
+	dbLock DBLock,
+) ([]postVote, error) {
+	postVote := []postVote{}
+	query := `
+		select
+			id,
+			post_id,
+			voter_id,
+			post_option_id,
+			reason
+		from post_vote
+		where true
+	`
+
+	args := []any{}
+	if len(params.IDs) > 0 {
+		args = append(args, params.IDs)
+		query = fmt.Sprintf("%s and id = any($%v)", query, len(args))
+	}
+
+	query = fmt.Sprintf("%s %s", query, dbLock)
+
+	if err := db.SelectContext(ctx, &postVote, query, args...); err != nil {
+		return nil, fmt.Errorf("selecting post_options: %w", err)
+	}
+
+	return postVote, nil
 }
 
 type upsertPostParams struct {
@@ -294,7 +339,7 @@ func updatePostOptionPositions(
 				from post_option_update
 				where post_option_update.id = post_option.id
 			)
-		where id = any($1)`, ids,
+		where id = any($1)`, values,
 	)
 	if _, err := db.ExecContext(ctx, query, ids); err != nil {
 		return fmt.Errorf("updating post_option: %w", err)

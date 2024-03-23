@@ -53,10 +53,13 @@ func main() {
 
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("creating google storage client: %v", err)
+	}
 
 	services := graph.Services{
 		Customer: srvcustomer.New(db),
-		Post:     srvpost.New(db, client.Bucket("quorum-vote")),
+		Post:     srvpost.New(db, client.Bucket("quorum-vote"), "quorum-vote"),
 	}
 
 	var srv http.Handler = handler.NewDefaultServer(

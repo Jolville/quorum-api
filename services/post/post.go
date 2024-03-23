@@ -44,10 +44,11 @@ type Option struct {
 }
 
 type Vote struct {
-	ID      uuid.UUID
-	PostID  uuid.UUID
-	VoterID uuid.UUID
-	Reason  *string
+	ID         uuid.UUID
+	PostID     uuid.UUID
+	CustomerID uuid.UUID
+	OptionID   uuid.UUID
+	Reason     *string
 }
 
 type UpsertPostRequest struct {
@@ -122,8 +123,11 @@ type srv struct {
 func (s *srv) GetPostsByFilter(
 	ctx context.Context, request GetPostsByFilterRequest,
 ) ([]Post, error) {
+	params := getPostsByFilterParams{
+		IDs: request.IDs,
+	}
 	posts, err := getPostsByFilter(
-		ctx, s.db, getPostsByFilterParams(request), DBLockUnspecified,
+		ctx, s.db, params, DBLockUnspecified,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("getting posts: %w", err)
@@ -237,7 +241,6 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			switch o.File.ContentType {
 			case "image/jpeg":
 				fileRef = fmt.Sprintf(
-					// "https://storage.cloud.google.com/%s/post-options/%s.jpeg", here is the url for later
 					"%s/post-options/%s.jpeg",
 					s.bucketName, o.ID,
 				)
@@ -374,7 +377,7 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		}, DBLockForUpdate,
 	)
 	if err != nil {
-		return fmt.Errorf("getting post options: %w")
+		return fmt.Errorf("getting post options: %w", err)
 	}
 
 	optionIDsToDelete := []uuid.UUID{}
@@ -521,13 +524,55 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 func (s *srv) GetOptionsByFilter(
 	ctx context.Context, request GetOptionsByFilterRequest,
 ) ([]Option, error) {
-	panic("not implemented")
+	params := getPostOptionsByFilterParams{
+		IDs: request.IDs,
+	}
+	postOptions, err := getPostOptionsByFilter(
+		ctx, s.db, params, DBLockUnspecified,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getting posts: %w", err)
+	}
+
+	res := []Option{}
+	for _, po := range postOptions {
+		url := fmt.Sprintf("https://storage.cloud.google.com/%s/%s", s.bucketName, po.FileRef)
+		res = append(res, Option{
+			ID:       po.ID,
+			Position: po.Position,
+			URL:      &url,
+		})
+	}
+
+	return res, nil
 }
 
 func (s *srv) GetVotesByFilter(
 	ctx context.Context, request GetVotesByFilterRequest,
 ) ([]Vote, error) {
-	panic("not implemented")
+	params := getPostVotesByFilterParams{
+		IDs: request.IDs,
+	}
+	postVotes, err := getPostVotesByFilter(
+		ctx, s.db, params, DBLockUnspecified,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getting posts: %w", err)
+	}
+
+	res := []Vote{}
+	for _, pv := range postVotes {
+		reason := *pv.Reason
+		res = append(res, Vote{
+			ID:         pv.ID,
+			CustomerID: pv.CustomerID,
+			OptionID:   pv.PostOptionID,
+			PostID:     pv.PostID,
+			Reason:     &reason,
+		})
+	}
+
+	return res, nil
 }
 
 func (s *srv) addObjToBucket(ctx context.Context, fileRef string, file Upload) {

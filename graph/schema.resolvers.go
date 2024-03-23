@@ -384,7 +384,7 @@ func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpos
 
 // Voter is the resolver for the voter field.
 func (r *postVoteResolver) Voter(ctx context.Context, obj *srvpost.Vote) (*srvcustomer.Customer, error) {
-	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.VoterID)
+	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.CustomerID)
 	if err != nil {
 		return nil, fmt.Errorf("loading author: %w", err)
 	}
