@@ -384,16 +384,28 @@ func (e DesignPhase) MarshalGQL(w io.Writer) {
 type PostCategory string
 
 const (
-	PostCategoryProductDesign PostCategory = "PRODUCT_DESIGN"
+	PostCategoryAnimation    PostCategory = "ANIMATION"
+	PostCategoryBranding     PostCategory = "BRANDING"
+	PostCategoryIllustration PostCategory = "ILLUSTRATION"
+	PostCategoryPrint        PostCategory = "PRINT"
+	PostCategoryProduct      PostCategory = "PRODUCT"
+	PostCategoryTypography   PostCategory = "TYPOGRAPHY"
+	PostCategoryWeb          PostCategory = "WEB"
 )
 
 var AllPostCategory = []PostCategory{
-	PostCategoryProductDesign,
+	PostCategoryAnimation,
+	PostCategoryBranding,
+	PostCategoryIllustration,
+	PostCategoryPrint,
+	PostCategoryProduct,
+	PostCategoryTypography,
+	PostCategoryWeb,
 }
 
 func (e PostCategory) IsValid() bool {
 	switch e {
-	case PostCategoryProductDesign:
+	case PostCategoryAnimation, PostCategoryBranding, PostCategoryIllustration, PostCategoryPrint, PostCategoryProduct, PostCategoryTypography, PostCategoryWeb:
 		return true
 	}
 	return false

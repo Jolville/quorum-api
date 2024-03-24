@@ -157,7 +157,13 @@ enum DesignPhase {
 }
 
 enum PostCategory {
-  PRODUCT_DESIGN
+  ANIMATION
+  BRANDING
+  ILLUSTRATION
+  PRINT
+  PRODUCT
+  TYPOGRAPHY
+  WEB
 }
 
 type Post {
