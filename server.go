@@ -7,6 +7,7 @@ import (
 	"os"
 	"quorum-api/database"
 	"quorum-api/graph"
+	srvcommunications "quorum-api/services/communications"
 	srvcustomer "quorum-api/services/customer"
 	srvpost "quorum-api/services/post"
 
@@ -57,9 +58,20 @@ func main() {
 		log.Fatalf("creating google storage client: %v", err)
 	}
 
+	mjApiKey := os.Getenv("MJ_API_KEY")
+	if mjApiKey == "" {
+		log.Fatalf("expected env var \"MJ_API_KEY\" to be set")
+	}
+
+	mjApiSecret := os.Getenv("MJ_SECRET_KEY")
+	if mjApiSecret == "" {
+		log.Fatalf("expected env var \"MJ_SECRET_KEY\" to be set")
+	}
+
 	services := graph.Services{
-		Customer: srvcustomer.New(db),
-		Post:     srvpost.New(db, client.Bucket("quorum-vote"), "quorum-vote"),
+		Customer:       srvcustomer.New(db),
+		Post:           srvpost.New(db, client.Bucket("quorum-vote"), "quorum-vote"),
+		Communications: srvcommunications.New(mjApiKey, mjApiSecret),
 	}
 
 	var srv http.Handler = handler.NewDefaultServer(
