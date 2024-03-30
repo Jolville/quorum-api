@@ -5,14 +5,15 @@ env_vars_string=$(cat prod.env | tr '\n' ',')
 
 git diff --exit-code
 
-current_tag=$(git tag)
+current_tag=$(git describe --tags --abbrev=0)
 echo "Current tag: $current_tag"
-echo "New tag?"
+echo 'New tag (set to "latest" to re-deploy latest image)?'
 read new_tag
 
-docker build --platform linux/amd64 -t australia-southeast1-docker.pkg.dev/trusty-charmer-415303/quorum/quorum-api:$new_tag .
-
-docker push australia-southeast1-docker.pkg.dev/trusty-charmer-415303/quorum/quorum-api:$new_tag
+if [$new_tag != "latest"]; then
+    docker build --platform linux/amd64 -t australia-southeast1-docker.pkg.dev/trusty-charmer-415303/quorum/quorum-api:$new_tag .
+    docker push australia-southeast1-docker.pkg.dev/trusty-charmer-415303/quorum/quorum-api:$new_tag
+fi
 
 gcloud run deploy three-tier-app-api \
     --image australia-southeast1-docker.pkg.dev/trusty-charmer-415303/quorum/quorum-api:$new_tag \
