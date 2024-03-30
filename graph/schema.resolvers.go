@@ -22,6 +22,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var ErrUnexpected = errors.New("unexpected error occurred")
+
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) (*model.SignUpPayload, error) {
 	if strings.Contains(input.ReturnTo, ".") {
@@ -53,11 +55,11 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 		)
 		if err != nil {
 			log.Printf("error getting customers: %v", err)
-			return nil, fmt.Errorf("unexpected error occured")
+			return nil, ErrUnexpected
 		}
 		if len(customers) != 1 {
 			log.Printf("expected 1 customer")
-			return nil, fmt.Errorf("unexpected error occured")
+			return nil, ErrUnexpected
 		}
 		customerID = customers[0].ID
 	case srvcustomer.ErrInvalidEmail:
@@ -71,7 +73,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 		}, nil
 	default:
 		log.Printf("error creating unverified customer: %v", err)
-		return nil, fmt.Errorf("unexpected error occured")
+		return nil, ErrUnexpected
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 		IsVerified: false,
@@ -85,13 +87,13 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
 		log.Printf("error signing token: %v", err)
-		return nil, fmt.Errorf("unexpected error occured")
+		return nil, ErrUnexpected
 	}
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
 	queryParams.Add("token", tokenString)
 	confirmationLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
-	r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
+	if err = r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
 		ToEmail:    input.Email,
 		TemplateID: 5834186,
 		Subject:    "Verify your Quorum Account",
@@ -99,7 +101,10 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			"first_name":        input.FirstName,
 			"confirmation_link": confirmationLink,
 		},
-	})
+	}); err != nil {
+		log.Printf("error sending email: %v", err)
+		return nil, ErrUnexpected
+	}
 	return &model.SignUpPayload{}, nil
 }
 
@@ -147,13 +152,13 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
 		log.Printf("error signing token: %v", err)
-		return nil, fmt.Errorf("unexpected error occured")
+		return nil, ErrUnexpected
 	}
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
 	queryParams.Add("token", tokenString)
 	confirmationLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
-	r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
+	if err = r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
 		ToEmail:    customer.Email,
 		TemplateID: 5834186,
 		Subject:    "Verify your Quorum Account",
@@ -161,7 +166,10 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 			"first_name":        customer.FirstName,
 			"confirmation_link": confirmationLink,
 		},
-	})
+	}); err != nil {
+		log.Printf("error sending email: %v", err)
+		return nil, ErrUnexpected
+	}
 	return &model.GetLoginLinkPayload{}, nil
 }
 
@@ -205,12 +213,12 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 		tokenString, err := token.SignedString([]byte(r.JWTSecret))
 		if err != nil {
 			log.Printf("error signing token: %v", err)
-			return nil, fmt.Errorf("unexpected error occured")
+			return nil, ErrUnexpected
 		}
 		customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, customerID)
 		if err != nil {
 			log.Printf("loading customer: %v", err)
-			return nil, fmt.Errorf("unexpected error occured")
+			return nil, ErrUnexpected
 		}
 		return &model.VerifyCustomerTokenPayload{
 			NewToken: &tokenString,
