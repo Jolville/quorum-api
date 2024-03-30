@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"quorum-api/graph/model"
+	srvcommunications "quorum-api/services/communications"
 	srvcustomer "quorum-api/services/customer"
 	srvpost "quorum-api/services/post"
 	"strings"
@@ -89,12 +90,16 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
 	queryParams.Add("token", tokenString)
-	magicLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
-	if os.Getenv("GO_ENV") == "local" {
-		log.Printf("Magic link:\n%s", magicLink)
-	} else {
-		return nil, fmt.Errorf("not implemented: GetLoginLink: sending email")
-	}
+	confirmationLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
+	r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
+		ToEmail:    input.Email,
+		TemplateID: 5834186,
+		Subject:    "Verify your Quorum Account",
+		Variables: map[string]interface{}{
+			"first_name":        input.FirstName,
+			"confirmation_link": confirmationLink,
+		},
+	})
 	return &model.SignUpPayload{}, nil
 }
 
@@ -147,12 +152,16 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
 	queryParams.Add("token", tokenString)
-	magicLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
-	if os.Getenv("GO_ENV") == "local" {
-		log.Printf("Magic link:\n%s", magicLink)
-	} else {
-		return nil, fmt.Errorf("not implemented: GetLoginLink: sending email")
-	}
+	confirmationLink := fmt.Sprintf("%s/verify?%s", os.Getenv("FRONTEND_URL"), queryParams.Encode())
+	r.Services.Communications.SendEmail(srvcommunications.SendEmailRequest{
+		ToEmail:    customer.Email,
+		TemplateID: 5834186,
+		Subject:    "Verify your Quorum Account",
+		Variables: map[string]interface{}{
+			"first_name":        customer.FirstName,
+			"confirmation_link": confirmationLink,
+		},
+	})
 	return &model.GetLoginLinkPayload{}, nil
 }
 
