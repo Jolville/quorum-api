@@ -76,11 +76,6 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
-	FileTooLargeError struct {
-		Message func(childComplexity int) int
-		Path    func(childComplexity int) int
-	}
-
 	GenerateSignedPostOptionUrlPayload struct {
 		BucketName func(childComplexity int) int
 		Errors     func(childComplexity int) int
@@ -310,20 +305,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ErrPostNotOwned.Path(childComplexity), true
-
-	case "FileTooLargeError.message":
-		if e.complexity.FileTooLargeError.Message == nil {
-			break
-		}
-
-		return e.complexity.FileTooLargeError.Message(childComplexity), true
-
-	case "FileTooLargeError.path":
-		if e.complexity.FileTooLargeError.Path == nil {
-			break
-		}
-
-		return e.complexity.FileTooLargeError.Path(childComplexity), true
 
 	case "GenerateSignedPostOptionUrlPayload.bucketName":
 		if e.complexity.GenerateSignedPostOptionUrlPayload.BucketName == nil {
@@ -1455,91 +1436,6 @@ func (ec *executionContext) _ErrPostNotOwned_path(ctx context.Context, field gra
 func (ec *executionContext) fieldContext_ErrPostNotOwned_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ErrPostNotOwned",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FileTooLargeError_message(ctx context.Context, field graphql.CollectedField, obj *model.FileTooLargeError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FileTooLargeError_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FileTooLargeError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FileTooLargeError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FileTooLargeError_path(ctx context.Context, field graphql.CollectedField, obj *model.FileTooLargeError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FileTooLargeError_path(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FileTooLargeError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FileTooLargeError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -6289,20 +6185,6 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, obj)
-	case model.FileTooLargeError:
-		return ec._FileTooLargeError(ctx, sel, &obj)
-	case *model.FileTooLargeError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._FileTooLargeError(ctx, sel, obj)
-	case model.UnsupportedFileTypeError:
-		return ec._UnsupportedFileTypeError(ctx, sel, &obj)
-	case *model.UnsupportedFileTypeError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._UnsupportedFileTypeError(ctx, sel, obj)
 	case model.UnauthenticatedError:
 		return ec._UnauthenticatedError(ctx, sel, &obj)
 	case *model.UnauthenticatedError:
@@ -6310,6 +6192,13 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._UnauthenticatedError(ctx, sel, obj)
+	case model.UnsupportedFileTypeError:
+		return ec._UnsupportedFileTypeError(ctx, sel, &obj)
+	case *model.UnsupportedFileTypeError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UnsupportedFileTypeError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -6326,6 +6215,13 @@ func (ec *executionContext) _GenerateSignedPostOptionUrlError(ctx context.Contex
 			return graphql.Null
 		}
 		return ec._UnauthenticatedError(ctx, sel, obj)
+	case model.UnsupportedFileTypeError:
+		return ec._UnsupportedFileTypeError(ctx, sel, &obj)
+	case *model.UnsupportedFileTypeError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UnsupportedFileTypeError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -6430,13 +6326,6 @@ func (ec *executionContext) _UpsertPostError(ctx context.Context, sel ast.Select
 			return graphql.Null
 		}
 		return ec._ClosesAtNotAfterOpensAtError(ctx, sel, obj)
-	case model.FileTooLargeError:
-		return ec._FileTooLargeError(ctx, sel, &obj)
-	case *model.FileTooLargeError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._FileTooLargeError(ctx, sel, obj)
 	case model.UnsupportedFileTypeError:
 		return ec._UnsupportedFileTypeError(ctx, sel, &obj)
 	case *model.UnsupportedFileTypeError:
@@ -6619,47 +6508,6 @@ func (ec *executionContext) _ErrPostNotOwned(ctx context.Context, sel ast.Select
 			}
 		case "path":
 			out.Values[i] = ec._ErrPostNotOwned_path(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var fileTooLargeErrorImplementors = []string{"FileTooLargeError", "BaseError", "UpsertPostError"}
-
-func (ec *executionContext) _FileTooLargeError(ctx context.Context, sel ast.SelectionSet, obj *model.FileTooLargeError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, fileTooLargeErrorImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FileTooLargeError")
-		case "message":
-			out.Values[i] = ec._FileTooLargeError_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "path":
-			out.Values[i] = ec._FileTooLargeError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7676,7 +7524,7 @@ func (ec *executionContext) _UnauthenticatedError(ctx context.Context, sel ast.S
 	return out
 }
 
-var unsupportedFileTypeErrorImplementors = []string{"UnsupportedFileTypeError", "BaseError", "UpsertPostError"}
+var unsupportedFileTypeErrorImplementors = []string{"UnsupportedFileTypeError", "UpsertPostError", "BaseError", "GenerateSignedPostOptionUrlError"}
 
 func (ec *executionContext) _UnsupportedFileTypeError(ctx context.Context, sel ast.SelectionSet, obj *model.UnsupportedFileTypeError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, unsupportedFileTypeErrorImplementors)

@@ -106,7 +106,7 @@ var ErrClosesAtNotSet = errors.New("must set close time when publishing a post")
 
 var ErrOptionPositionsInvalid = errors.New("must provide unique position from 1 to 6")
 
-var ErrOptionFileRequired = errors.New("file is required to create new post option")
+var ErrUnsupportedFileType = errors.New("only .jpeg, .png and .gif files are supported")
 
 func New(db *sqlx.DB, bucket *storage.BucketHandle, bucketName string) SRVPost {
 	return &srv{
@@ -492,6 +492,9 @@ func (s *srv) GenerateSignedPostOptionURL(
 	ext := filepath.Ext(request.FileName)
 	if ext == "" {
 		return nil, fmt.Errorf("expected file extension to be non-empty")
+	}
+	if ext != ".jpeg" && ext != ".png" && ext != ".gif" {
+		return nil, ErrUnsupportedFileType
 	}
 	if request.ContentType == "" {
 		return nil, fmt.Errorf("expected content type to be non-empty")

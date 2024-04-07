@@ -121,16 +121,6 @@ type ClosesAtNotAfterOpensAtError implements BaseError {
   path: [String!]
 }
 
-type FileTooLargeError implements BaseError {
-  message: String!
-  path: [String!]
-}
-
-type UnsupportedFileTypeError implements BaseError {
-  message: String!
-  path: [String!]
-}
-
 union UpsertPostError =
     TooManyOptionsError
   | TooFewOptionsError
@@ -138,7 +128,6 @@ union UpsertPostError =
   | UnauthenticatedError
   | OpensAtAlreadyPassedError
   | ClosesAtNotAfterOpensAtError
-  | FileTooLargeError
   | UnsupportedFileTypeError
 
 type UpsertPostPayload {
@@ -219,6 +208,11 @@ type UnauthenticatedError implements BaseError {
   path: [String!]
 }
 
+type UnsupportedFileTypeError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
 input GenerateSignedPostOptionUrInput {
   """
   Generates a url to upload the file too based off this filename.
@@ -228,7 +222,9 @@ input GenerateSignedPostOptionUrInput {
   contentType: String!
 }
 
-union GenerateSignedPostOptionUrlError = UnauthenticatedError
+union GenerateSignedPostOptionUrlError =
+    UnauthenticatedError
+  | UnsupportedFileTypeError
 
 type GenerateSignedPostOptionUrlPayload {
   bucketName: String!

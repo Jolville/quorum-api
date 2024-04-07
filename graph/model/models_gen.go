@@ -99,26 +99,6 @@ func (this ErrPostNotOwned) GetPath() []string {
 
 func (ErrPostNotOwned) IsUpsertPostError() {}
 
-type FileTooLargeError struct {
-	Message string   `json:"message"`
-	Path    []string `json:"path,omitempty"`
-}
-
-func (FileTooLargeError) IsBaseError()            {}
-func (this FileTooLargeError) GetMessage() string { return this.Message }
-func (this FileTooLargeError) GetPath() []string {
-	if this.Path == nil {
-		return nil
-	}
-	interfaceSlice := make([]string, 0, len(this.Path))
-	for _, concrete := range this.Path {
-		interfaceSlice = append(interfaceSlice, concrete)
-	}
-	return interfaceSlice
-}
-
-func (FileTooLargeError) IsUpsertPostError() {}
-
 type GenerateSignedPostOptionUrInput struct {
 	// Generates a url to upload the file too based off this filename.
 	// The name is ignored, but the extension is not.
@@ -311,6 +291,8 @@ type UnsupportedFileTypeError struct {
 	Path    []string `json:"path,omitempty"`
 }
 
+func (UnsupportedFileTypeError) IsUpsertPostError() {}
+
 func (UnsupportedFileTypeError) IsBaseError()            {}
 func (this UnsupportedFileTypeError) GetMessage() string { return this.Message }
 func (this UnsupportedFileTypeError) GetPath() []string {
@@ -324,7 +306,7 @@ func (this UnsupportedFileTypeError) GetPath() []string {
 	return interfaceSlice
 }
 
-func (UnsupportedFileTypeError) IsUpsertPostError() {}
+func (UnsupportedFileTypeError) IsGenerateSignedPostOptionURLError() {}
 
 type UpsertPostInput struct {
 	ID          uuid.UUID                `json:"id"`

@@ -330,6 +330,15 @@ func (r *mutationResolver) GenerateSignedPostOptionURL(ctx context.Context, inpu
 		},
 	)
 	if err != nil {
+		if errors.Is(err, srvpost.ErrUnsupportedFileType) {
+			return &model.GenerateSignedPostOptionURLPayload{
+				Errors: []model.GenerateSignedPostOptionURLError{
+					model.UnsupportedFileTypeError{
+						Message: err.Error(),
+					},
+				},
+			}, nil
+		}
 		log.Printf("error generating signed url: %v", err)
 		return nil, ErrUnexpected
 	}
