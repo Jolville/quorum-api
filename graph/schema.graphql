@@ -2,8 +2,6 @@ scalar UUID
 
 scalar Time
 
-scalar Upload
-
 type Customer {
   id: UUID!
   firstName: String
@@ -93,6 +91,9 @@ type Mutation {
     input: VerifyCustomerTokenInput!
   ): VerifyCustomerTokenPayload!
   upsertPost(input: UpsertPostInput!): UpsertPostPayload!
+  generateSignedPostOptionUrl(
+    input: GenerateSignedPostOptionUrInput!
+  ): GenerateSignedPostOptionUrlPayload!
 }
 
 type TooManyOptionsError implements BaseError {
@@ -106,11 +107,6 @@ type TooFewOptionsError implements BaseError {
 }
 
 type ErrPostNotOwned implements BaseError {
-  message: String!
-  path: [String!]
-}
-
-type AuthorUnknownError implements BaseError {
   message: String!
   path: [String!]
 }
@@ -139,7 +135,7 @@ union UpsertPostError =
     TooManyOptionsError
   | TooFewOptionsError
   | ErrPostNotOwned
-  | AuthorUnknownError
+  | UnauthenticatedError
   | OpensAtAlreadyPassedError
   | ClosesAtNotAfterOpensAtError
   | FileTooLargeError
@@ -208,11 +204,35 @@ input UpsertPostInput {
 input UpsertPostOptionInput {
   id: UUID!
   position: Int!
-  file: Upload
+  bucketName: String!
+  filePath: String!
 }
 
 enum PostStatus {
   DRAFT
   LIVE
   CLOSED
+}
+
+type UnauthenticatedError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+input GenerateSignedPostOptionUrInput {
+  """
+  Generates a url to upload the file too based off this filename.
+  The name is ignored, but the extension is not.
+  """
+  fileName: String!
+  contentType: String!
+}
+
+union GenerateSignedPostOptionUrlError = UnauthenticatedError
+
+type GenerateSignedPostOptionUrlPayload {
+  bucketName: String!
+  fileKey: String!
+  url: String!
+  errors: [GenerateSignedPostOptionUrlError!]!
 }

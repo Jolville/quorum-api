@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
 )
 
@@ -18,6 +17,10 @@ type BaseError interface {
 	IsBaseError()
 	GetMessage() string
 	GetPath() []string
+}
+
+type GenerateSignedPostOptionURLError interface {
+	IsGenerateSignedPostOptionURLError()
 }
 
 type GetLoginLinkError interface {
@@ -35,26 +38,6 @@ type UpsertPostError interface {
 type VerifyCustomerTokenError interface {
 	IsVerifyCustomerTokenError()
 }
-
-type AuthorUnknownError struct {
-	Message string   `json:"message"`
-	Path    []string `json:"path,omitempty"`
-}
-
-func (AuthorUnknownError) IsBaseError()            {}
-func (this AuthorUnknownError) GetMessage() string { return this.Message }
-func (this AuthorUnknownError) GetPath() []string {
-	if this.Path == nil {
-		return nil
-	}
-	interfaceSlice := make([]string, 0, len(this.Path))
-	for _, concrete := range this.Path {
-		interfaceSlice = append(interfaceSlice, concrete)
-	}
-	return interfaceSlice
-}
-
-func (AuthorUnknownError) IsUpsertPostError() {}
 
 type ClosesAtNotAfterOpensAtError struct {
 	Message string   `json:"message"`
@@ -135,6 +118,20 @@ func (this FileTooLargeError) GetPath() []string {
 }
 
 func (FileTooLargeError) IsUpsertPostError() {}
+
+type GenerateSignedPostOptionUrInput struct {
+	// Generates a url to upload the file too based off this filename.
+	// The name is ignored, but the extension is not.
+	FileName    string `json:"fileName"`
+	ContentType string `json:"contentType"`
+}
+
+type GenerateSignedPostOptionURLPayload struct {
+	BucketName string                             `json:"bucketName"`
+	FileKey    string                             `json:"fileKey"`
+	URL        string                             `json:"url"`
+	Errors     []GenerateSignedPostOptionURLError `json:"errors"`
+}
 
 type GetLoginLinkInput struct {
 	Email    string `json:"email"`
@@ -287,6 +284,28 @@ func (this TooManyOptionsError) GetPath() []string {
 
 func (TooManyOptionsError) IsUpsertPostError() {}
 
+type UnauthenticatedError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (UnauthenticatedError) IsUpsertPostError() {}
+
+func (UnauthenticatedError) IsBaseError()            {}
+func (this UnauthenticatedError) GetMessage() string { return this.Message }
+func (this UnauthenticatedError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (UnauthenticatedError) IsGenerateSignedPostOptionURLError() {}
+
 type UnsupportedFileTypeError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
@@ -318,9 +337,10 @@ type UpsertPostInput struct {
 }
 
 type UpsertPostOptionInput struct {
-	ID       uuid.UUID       `json:"id"`
-	Position int             `json:"position"`
-	File     *graphql.Upload `json:"file,omitempty"`
+	ID         uuid.UUID `json:"id"`
+	Position   int       `json:"position"`
+	BucketName string    `json:"bucketName"`
+	FilePath   string    `json:"filePath"`
 }
 
 type UpsertPostPayload struct {

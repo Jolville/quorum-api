@@ -53,11 +53,6 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	AuthorUnknownError struct {
-		Message func(childComplexity int) int
-		Path    func(childComplexity int) int
-	}
-
 	ClosesAtNotAfterOpensAtError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
@@ -86,6 +81,13 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
+	GenerateSignedPostOptionUrlPayload struct {
+		BucketName func(childComplexity int) int
+		Errors     func(childComplexity int) int
+		FileKey    func(childComplexity int) int
+		URL        func(childComplexity int) int
+	}
+
 	GetLoginLinkPayload struct {
 		Errors func(childComplexity int) int
 	}
@@ -106,10 +108,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		GetLoginLink        func(childComplexity int, input model.GetLoginLinkInput) int
-		SignUp              func(childComplexity int, input model.SignUpInput) int
-		UpsertPost          func(childComplexity int, input model.UpsertPostInput) int
-		VerifyCustomerToken func(childComplexity int, input model.VerifyCustomerTokenInput) int
+		GenerateSignedPostOptionURL func(childComplexity int, input model.GenerateSignedPostOptionUrInput) int
+		GetLoginLink                func(childComplexity int, input model.GetLoginLinkInput) int
+		SignUp                      func(childComplexity int, input model.SignUpInput) int
+		UpsertPost                  func(childComplexity int, input model.UpsertPostInput) int
+		VerifyCustomerToken         func(childComplexity int, input model.VerifyCustomerTokenInput) int
 	}
 
 	OpensAtAlreadyPassedError struct {
@@ -164,6 +167,11 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
+	UnauthenticatedError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	UnsupportedFileTypeError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
@@ -186,6 +194,7 @@ type MutationResolver interface {
 	GetLoginLink(ctx context.Context, input model.GetLoginLinkInput) (*model.GetLoginLinkPayload, error)
 	VerifyCustomerToken(ctx context.Context, input model.VerifyCustomerTokenInput) (*model.VerifyCustomerTokenPayload, error)
 	UpsertPost(ctx context.Context, input model.UpsertPostInput) (*model.UpsertPostPayload, error)
+	GenerateSignedPostOptionURL(ctx context.Context, input model.GenerateSignedPostOptionUrInput) (*model.GenerateSignedPostOptionURLPayload, error)
 }
 type PostResolver interface {
 	DesignPhase(ctx context.Context, obj *srvpost.Post) (*model.DesignPhase, error)
@@ -224,20 +233,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
-
-	case "AuthorUnknownError.message":
-		if e.complexity.AuthorUnknownError.Message == nil {
-			break
-		}
-
-		return e.complexity.AuthorUnknownError.Message(childComplexity), true
-
-	case "AuthorUnknownError.path":
-		if e.complexity.AuthorUnknownError.Path == nil {
-			break
-		}
-
-		return e.complexity.AuthorUnknownError.Path(childComplexity), true
 
 	case "ClosesAtNotAfterOpensAtError.message":
 		if e.complexity.ClosesAtNotAfterOpensAtError.Message == nil {
@@ -330,6 +325,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FileTooLargeError.Path(childComplexity), true
 
+	case "GenerateSignedPostOptionUrlPayload.bucketName":
+		if e.complexity.GenerateSignedPostOptionUrlPayload.BucketName == nil {
+			break
+		}
+
+		return e.complexity.GenerateSignedPostOptionUrlPayload.BucketName(childComplexity), true
+
+	case "GenerateSignedPostOptionUrlPayload.errors":
+		if e.complexity.GenerateSignedPostOptionUrlPayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.GenerateSignedPostOptionUrlPayload.Errors(childComplexity), true
+
+	case "GenerateSignedPostOptionUrlPayload.fileKey":
+		if e.complexity.GenerateSignedPostOptionUrlPayload.FileKey == nil {
+			break
+		}
+
+		return e.complexity.GenerateSignedPostOptionUrlPayload.FileKey(childComplexity), true
+
+	case "GenerateSignedPostOptionUrlPayload.url":
+		if e.complexity.GenerateSignedPostOptionUrlPayload.URL == nil {
+			break
+		}
+
+		return e.complexity.GenerateSignedPostOptionUrlPayload.URL(childComplexity), true
+
 	case "GetLoginLinkPayload.errors":
 		if e.complexity.GetLoginLinkPayload.Errors == nil {
 			break
@@ -378,6 +401,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LinkExpiredError.Path(childComplexity), true
+
+	case "Mutation.generateSignedPostOptionUrl":
+		if e.complexity.Mutation.GenerateSignedPostOptionURL == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_generateSignedPostOptionUrl_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateSignedPostOptionURL(childComplexity, args["input"].(model.GenerateSignedPostOptionUrInput)), true
 
 	case "Mutation.getLoginLink":
 		if e.complexity.Mutation.GetLoginLink == nil {
@@ -628,6 +663,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TooManyOptionsError.Path(childComplexity), true
 
+	case "UnauthenticatedError.message":
+		if e.complexity.UnauthenticatedError.Message == nil {
+			break
+		}
+
+		return e.complexity.UnauthenticatedError.Message(childComplexity), true
+
+	case "UnauthenticatedError.path":
+		if e.complexity.UnauthenticatedError.Path == nil {
+			break
+		}
+
+		return e.complexity.UnauthenticatedError.Path(childComplexity), true
+
 	case "UnsupportedFileTypeError.message":
 		if e.complexity.UnsupportedFileTypeError.Message == nil {
 			break
@@ -685,6 +734,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputGenerateSignedPostOptionUrInput,
 		ec.unmarshalInputGetLoginLinkInput,
 		ec.unmarshalInputSignUpInput,
 		ec.unmarshalInputUpsertPostInput,
@@ -805,6 +855,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_generateSignedPostOptionUrl_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.GenerateSignedPostOptionUrInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNGenerateSignedPostOptionUrInput2quorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionUrInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_getLoginLink_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -933,91 +998,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _AuthorUnknownError_message(ctx context.Context, field graphql.CollectedField, obj *model.AuthorUnknownError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AuthorUnknownError_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AuthorUnknownError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AuthorUnknownError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AuthorUnknownError_path(ctx context.Context, field graphql.CollectedField, obj *model.AuthorUnknownError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AuthorUnknownError_path(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AuthorUnknownError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AuthorUnknownError",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
 
 func (ec *executionContext) _ClosesAtNotAfterOpensAtError_message(ctx context.Context, field graphql.CollectedField, obj *model.ClosesAtNotAfterOpensAtError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ClosesAtNotAfterOpensAtError_message(ctx, field)
@@ -1570,6 +1550,182 @@ func (ec *executionContext) fieldContext_FileTooLargeError_path(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _GenerateSignedPostOptionUrlPayload_bucketName(ctx context.Context, field graphql.CollectedField, obj *model.GenerateSignedPostOptionURLPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateSignedPostOptionUrlPayload_bucketName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BucketName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateSignedPostOptionUrlPayload_bucketName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateSignedPostOptionUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GenerateSignedPostOptionUrlPayload_fileKey(ctx context.Context, field graphql.CollectedField, obj *model.GenerateSignedPostOptionURLPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateSignedPostOptionUrlPayload_fileKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FileKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateSignedPostOptionUrlPayload_fileKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateSignedPostOptionUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GenerateSignedPostOptionUrlPayload_url(ctx context.Context, field graphql.CollectedField, obj *model.GenerateSignedPostOptionURLPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateSignedPostOptionUrlPayload_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateSignedPostOptionUrlPayload_url(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateSignedPostOptionUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GenerateSignedPostOptionUrlPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.GenerateSignedPostOptionURLPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateSignedPostOptionUrlPayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.GenerateSignedPostOptionURLError)
+	fc.Result = res
+	return ec.marshalNGenerateSignedPostOptionUrlError2ᚕquorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLErrorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateSignedPostOptionUrlPayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateSignedPostOptionUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type GenerateSignedPostOptionUrlError does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GetLoginLinkPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.GetLoginLinkPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_GetLoginLinkPayload_errors(ctx, field)
 	if err != nil {
@@ -2105,6 +2261,71 @@ func (ec *executionContext) fieldContext_Mutation_upsertPost(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_upsertPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_generateSignedPostOptionUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_generateSignedPostOptionUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GenerateSignedPostOptionURL(rctx, fc.Args["input"].(model.GenerateSignedPostOptionUrInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.GenerateSignedPostOptionURLPayload)
+	fc.Result = res
+	return ec.marshalNGenerateSignedPostOptionUrlPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_generateSignedPostOptionUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "bucketName":
+				return ec.fieldContext_GenerateSignedPostOptionUrlPayload_bucketName(ctx, field)
+			case "fileKey":
+				return ec.fieldContext_GenerateSignedPostOptionUrlPayload_fileKey(ctx, field)
+			case "url":
+				return ec.fieldContext_GenerateSignedPostOptionUrlPayload_url(ctx, field)
+			case "errors":
+				return ec.fieldContext_GenerateSignedPostOptionUrlPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GenerateSignedPostOptionUrlPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_generateSignedPostOptionUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3528,6 +3749,91 @@ func (ec *executionContext) _TooManyOptionsError_path(ctx context.Context, field
 func (ec *executionContext) fieldContext_TooManyOptionsError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TooManyOptionsError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnauthenticatedError_message(ctx context.Context, field graphql.CollectedField, obj *model.UnauthenticatedError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnauthenticatedError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnauthenticatedError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnauthenticatedError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnauthenticatedError_path(ctx context.Context, field graphql.CollectedField, obj *model.UnauthenticatedError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnauthenticatedError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnauthenticatedError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnauthenticatedError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -5645,6 +5951,40 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputGenerateSignedPostOptionUrInput(ctx context.Context, obj interface{}) (model.GenerateSignedPostOptionUrInput, error) {
+	var it model.GenerateSignedPostOptionUrInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fileName", "contentType"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fileName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileName = data
+		case "contentType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contentType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContentType = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputGetLoginLinkInput(ctx context.Context, obj interface{}) (model.GetLoginLinkInput, error) {
 	var it model.GetLoginLinkInput
 	asMap := map[string]interface{}{}
@@ -5810,7 +6150,7 @@ func (ec *executionContext) unmarshalInputUpsertPostOptionInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "position", "file"}
+	fieldsInOrder := [...]string{"id", "position", "bucketName", "filePath"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5831,13 +6171,20 @@ func (ec *executionContext) unmarshalInputUpsertPostOptionInput(ctx context.Cont
 				return it, err
 			}
 			it.Position = data
-		case "file":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
-			data, err := ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+		case "bucketName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bucketName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.File = data
+			it.BucketName = data
+		case "filePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filePath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FilePath = data
 		}
 	}
 
@@ -5928,13 +6275,6 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._ErrPostNotOwned(ctx, sel, obj)
-	case model.AuthorUnknownError:
-		return ec._AuthorUnknownError(ctx, sel, &obj)
-	case *model.AuthorUnknownError:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._AuthorUnknownError(ctx, sel, obj)
 	case model.OpensAtAlreadyPassedError:
 		return ec._OpensAtAlreadyPassedError(ctx, sel, &obj)
 	case *model.OpensAtAlreadyPassedError:
@@ -5963,6 +6303,29 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._UnsupportedFileTypeError(ctx, sel, obj)
+	case model.UnauthenticatedError:
+		return ec._UnauthenticatedError(ctx, sel, &obj)
+	case *model.UnauthenticatedError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UnauthenticatedError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _GenerateSignedPostOptionUrlError(ctx context.Context, sel ast.SelectionSet, obj model.GenerateSignedPostOptionURLError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UnauthenticatedError:
+		return ec._UnauthenticatedError(ctx, sel, &obj)
+	case *model.UnauthenticatedError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UnauthenticatedError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -6046,13 +6409,13 @@ func (ec *executionContext) _UpsertPostError(ctx context.Context, sel ast.Select
 			return graphql.Null
 		}
 		return ec._ErrPostNotOwned(ctx, sel, obj)
-	case model.AuthorUnknownError:
-		return ec._AuthorUnknownError(ctx, sel, &obj)
-	case *model.AuthorUnknownError:
+	case model.UnauthenticatedError:
+		return ec._UnauthenticatedError(ctx, sel, &obj)
+	case *model.UnauthenticatedError:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._AuthorUnknownError(ctx, sel, obj)
+		return ec._UnauthenticatedError(ctx, sel, obj)
 	case model.OpensAtAlreadyPassedError:
 		return ec._OpensAtAlreadyPassedError(ctx, sel, &obj)
 	case *model.OpensAtAlreadyPassedError:
@@ -6105,47 +6468,6 @@ func (ec *executionContext) _VerifyCustomerTokenError(ctx context.Context, sel a
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
-
-var authorUnknownErrorImplementors = []string{"AuthorUnknownError", "BaseError", "UpsertPostError"}
-
-func (ec *executionContext) _AuthorUnknownError(ctx context.Context, sel ast.SelectionSet, obj *model.AuthorUnknownError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, authorUnknownErrorImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AuthorUnknownError")
-		case "message":
-			out.Values[i] = ec._AuthorUnknownError_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "path":
-			out.Values[i] = ec._AuthorUnknownError_path(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
 
 var closesAtNotAfterOpensAtErrorImplementors = []string{"ClosesAtNotAfterOpensAtError", "BaseError", "UpsertPostError"}
 
@@ -6338,6 +6660,60 @@ func (ec *executionContext) _FileTooLargeError(ctx context.Context, sel ast.Sele
 			}
 		case "path":
 			out.Values[i] = ec._FileTooLargeError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var generateSignedPostOptionUrlPayloadImplementors = []string{"GenerateSignedPostOptionUrlPayload"}
+
+func (ec *executionContext) _GenerateSignedPostOptionUrlPayload(ctx context.Context, sel ast.SelectionSet, obj *model.GenerateSignedPostOptionURLPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, generateSignedPostOptionUrlPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GenerateSignedPostOptionUrlPayload")
+		case "bucketName":
+			out.Values[i] = ec._GenerateSignedPostOptionUrlPayload_bucketName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileKey":
+			out.Values[i] = ec._GenerateSignedPostOptionUrlPayload_fileKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._GenerateSignedPostOptionUrlPayload_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._GenerateSignedPostOptionUrlPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6566,6 +6942,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "upsertPost":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_upsertPost(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "generateSignedPostOptionUrl":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_generateSignedPostOptionUrl(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -7252,6 +7635,47 @@ func (ec *executionContext) _TooManyOptionsError(ctx context.Context, sel ast.Se
 	return out
 }
 
+var unauthenticatedErrorImplementors = []string{"UnauthenticatedError", "UpsertPostError", "BaseError", "GenerateSignedPostOptionUrlError"}
+
+func (ec *executionContext) _UnauthenticatedError(ctx context.Context, sel ast.SelectionSet, obj *model.UnauthenticatedError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unauthenticatedErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnauthenticatedError")
+		case "message":
+			out.Values[i] = ec._UnauthenticatedError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._UnauthenticatedError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var unsupportedFileTypeErrorImplementors = []string{"UnsupportedFileTypeError", "BaseError", "UpsertPostError"}
 
 func (ec *executionContext) _UnsupportedFileTypeError(ctx context.Context, sel ast.SelectionSet, obj *model.UnsupportedFileTypeError) graphql.Marshaler {
@@ -7716,6 +8140,79 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNGenerateSignedPostOptionUrInput2quorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionUrInput(ctx context.Context, v interface{}) (model.GenerateSignedPostOptionUrInput, error) {
+	res, err := ec.unmarshalInputGenerateSignedPostOptionUrInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGenerateSignedPostOptionUrlError2quorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLError(ctx context.Context, sel ast.SelectionSet, v model.GenerateSignedPostOptionURLError) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GenerateSignedPostOptionUrlError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGenerateSignedPostOptionUrlError2ᚕquorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GenerateSignedPostOptionURLError) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNGenerateSignedPostOptionUrlError2quorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLError(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGenerateSignedPostOptionUrlPayload2quorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLPayload(ctx context.Context, sel ast.SelectionSet, v model.GenerateSignedPostOptionURLPayload) graphql.Marshaler {
+	return ec._GenerateSignedPostOptionUrlPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGenerateSignedPostOptionUrlPayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐGenerateSignedPostOptionURLPayload(ctx context.Context, sel ast.SelectionSet, v *model.GenerateSignedPostOptionURLPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GenerateSignedPostOptionUrlPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGetLoginLinkError2quorumᚑapiᚋgraphᚋmodelᚐGetLoginLinkError(ctx context.Context, sel ast.SelectionSet, v model.GetLoginLinkError) graphql.Marshaler {
@@ -8624,22 +9121,6 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 		return graphql.Null
 	}
 	res := graphql.MarshalTime(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (*graphql.Upload, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalUpload(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v *graphql.Upload) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalUpload(*v)
 	return res
 }
 

@@ -22,8 +22,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrUnexpected = errors.New("unexpected error occurred")
-
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) (*model.SignUpPayload, error) {
 	if strings.Contains(input.ReturnTo, ".") {
@@ -234,7 +232,7 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 	if !verifiedCustomer.Valid {
 		return &model.UpsertPostPayload{
 			Errors: []model.UpsertPostError{
-				model.AuthorUnknownError{
+				model.UnauthenticatedError{
 					Message: "Author of post unknown - try logging again",
 				},
 			},
@@ -243,19 +241,11 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 
 	options := []*srvpost.UpsertPostOptionRequest{}
 	for _, o := range input.Options {
-		var file *srvpost.Upload
-		if o.File != nil {
-			file = &srvpost.Upload{
-				File:        o.File.File,
-				Size:        o.File.Size,
-				Filename:    o.File.Filename,
-				ContentType: o.File.ContentType,
-			}
-		}
 		options = append(options, &srvpost.UpsertPostOptionRequest{
-			Position: o.Position,
-			ID:       o.ID,
-			File:     file,
+			Position:   o.Position,
+			ID:         o.ID,
+			BucketName: o.BucketName,
+			FileKey:    o.FilePath,
 		})
 	}
 
@@ -304,24 +294,6 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 			},
 		}, nil
 	}
-	if errors.Is(err, srvpost.ErrFileTooLarge) {
-		return &model.UpsertPostPayload{
-			Errors: []model.UpsertPostError{
-				model.FileTooLargeError{
-					Message: err.Error(),
-				},
-			},
-		}, nil
-	}
-	if errors.Is(err, srvpost.ErrUnsupportedFileType) {
-		return &model.UpsertPostPayload{
-			Errors: []model.UpsertPostError{
-				model.UnsupportedFileTypeError{
-					Message: err.Error(),
-				},
-			},
-		}, nil
-	}
 	// todo handle the other known errors
 	if err != nil {
 		return nil, fmt.Errorf("creating post: %w", err)
@@ -335,6 +307,37 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 	return &model.UpsertPostPayload{
 		Post:   post,
 		Errors: []model.UpsertPostError{},
+	}, nil
+}
+
+// GenerateSignedPostOptionURL is the resolver for the generateSignedPostOptionUrl field.
+func (r *mutationResolver) GenerateSignedPostOptionURL(ctx context.Context, input model.GenerateSignedPostOptionUrInput) (*model.GenerateSignedPostOptionURLPayload, error) {
+	verifiedCustomer := GetVerifiedCustomer(ctx)
+	if !verifiedCustomer.Valid {
+		return &model.GenerateSignedPostOptionURLPayload{
+			Errors: []model.GenerateSignedPostOptionURLError{
+				model.UnauthenticatedError{
+					Message: "Author of post unknown - try logging again",
+				},
+			},
+		}, nil
+	}
+
+	resp, err := r.Services.Post.GenerateSignedPostOptionURL(
+		ctx, srvpost.GenerateSignedPostOptionURLRequest{
+			FileName:    input.FileName,
+			ContentType: input.ContentType,
+		},
+	)
+	if err != nil {
+		log.Printf("error generating signed url: %v", err)
+		return nil, ErrUnexpected
+	}
+
+	return &model.GenerateSignedPostOptionURLPayload{
+		FileKey:    resp.FileKey,
+		BucketName: resp.BucketName,
+		URL:        resp.URL,
 	}, nil
 }
 
@@ -452,6 +455,8 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+var ErrUnexpected = errors.New("unexpected error occurred")
+
 func (r *postResolver) CreatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
 	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
 }

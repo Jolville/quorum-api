@@ -14,6 +14,10 @@ watch:
 		fd -e .go | entr -rd go run server.go; \
 	done;
 
+.PHONY: run
+run:
+	go run server.go
+
 .PHONY: dbup
 dbup:
 	docker pull postgres:15 && docker run --rm --name db_local -d -e POSTGRES_DB=quorum -e POSTGRES_PASSWORD=jesse -p 5432:5432 postgres:15

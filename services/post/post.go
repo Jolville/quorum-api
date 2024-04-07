@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,6 +18,7 @@ type SRVPost interface {
 	UpsertPost(ctx context.Context, request UpsertPostRequest) error
 	GetOptionsByFilter(ctx context.Context, request GetOptionsByFilterRequest) ([]Option, error)
 	GetVotesByFilter(ctx context.Context, request GetVotesByFilterRequest) ([]Vote, error)
+	GenerateSignedPostOptionURL(ctx context.Context, request GenerateSignedPostOptionURLRequest) (*GenerateSignedPostOptionURLResponse, error)
 }
 
 type GetPostsByFilterRequest struct {
@@ -63,17 +64,11 @@ type UpsertPostRequest struct {
 	Options     []*UpsertPostOptionRequest
 }
 
-type Upload struct {
-	File        io.ReadSeeker
-	Filename    string
-	Size        int64
-	ContentType string
-}
-
 type UpsertPostOptionRequest struct {
-	Position int
-	File     *Upload
-	ID       uuid.UUID
+	Position   int
+	BucketName string
+	FileKey    string
+	ID         uuid.UUID
 }
 
 type GetOptionsByFilterRequest struct {
@@ -82,6 +77,17 @@ type GetOptionsByFilterRequest struct {
 
 type GetVotesByFilterRequest struct {
 	IDs []uuid.UUID
+}
+
+type GenerateSignedPostOptionURLRequest struct {
+	FileName    string
+	ContentType string
+}
+
+type GenerateSignedPostOptionURLResponse struct {
+	BucketName string
+	FileKey    string
+	URL        string
 }
 
 var ErrTooManyOptions = errors.New("exceeded the maximum amount of options")
@@ -95,10 +101,6 @@ var ErrOpensAtAlreadyPassed = errors.New("live at time has already passed")
 var ErrOptionFileImmutable = errors.New("options file cannot be changed")
 
 var ErrClosesAtNotAfterOpensAt = errors.New("post close time must be after open time")
-
-var ErrFileTooLarge = errors.New("file must not be larger than 5MB")
-
-var ErrUnsupportedFileType = errors.New("only PNG, JPG and GIF files are supported")
 
 var ErrClosesAtNotSet = errors.New("must set close time when publishing a post")
 
@@ -208,20 +210,6 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			return ErrClosesAtNotSet
 		}
 
-		for _, o := range request.Options {
-			if o.File == nil {
-				return ErrOptionFileRequired
-			}
-			if o.File.Size > (5 << 20) {
-				return ErrFileTooLarge
-			}
-			if o.File.ContentType != "image/png" &&
-				o.File.ContentType != "image/jpeg" &&
-				o.File.ContentType != "image/gif" {
-				return ErrUnsupportedFileType
-			}
-		}
-
 		for i := 1; i <= len(request.Options); i++ {
 			optionFound := false
 			for _, o := range request.Options {
@@ -238,24 +226,13 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		wg := sync.WaitGroup{}
 		optionsToInsert := []postOption{}
 		for _, o := range request.Options {
-			var fileRef string
-			switch o.File.ContentType {
-			case "image/jpeg":
-				fileRef = fmt.Sprintf(
-					"%s/post-options/%s.jpeg",
-					s.bucketName, o.ID,
-				)
-			case "image/png":
-				fileRef = fmt.Sprintf(
-					"%s/post-options/%s.png",
-					s.bucketName, o.ID,
-				)
-			case "image/gif":
-				fileRef = fmt.Sprintf(
-					"%s/post-options/%s.gif",
-					s.bucketName, o.ID,
-				)
+			if s.bucketName != o.BucketName {
+				return fmt.Errorf("invalid bucket name")
 			}
+			fileRef := fmt.Sprintf(
+				"%s/%s",
+				s.bucketName, o.FileKey,
+			)
 			optionsToInsert = append(optionsToInsert, postOption{
 				ID:       o.ID,
 				PostID:   postToUpsert.ID,
@@ -263,10 +240,17 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 				FileRef:  fileRef,
 			})
 			wg.Add(1)
-			go func(ref string, file Upload) {
+			go func(fileKey string) {
 				defer wg.Done()
-				s.addObjToBucket(ctx, ref, file)
-			}(fileRef, *o.File)
+				if _, err := s.bucket.Object(fileKey).If(storage.Conditions{
+					DoesNotExist: true,
+				}).Attrs(ctx); err != nil {
+					if err == storage.ErrObjectNotExist {
+						panic(fmt.Sprintf("file %s does not exist", fileKey))
+					}
+					panic(fmt.Errorf("verifying file exists: %v", err))
+				}
+			}(o.FileKey)
 		}
 
 		if err = upsertPost(ctx, tx, postToUpsert); err != nil {
@@ -374,9 +358,6 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		for _, no := range request.Options {
 			if eo.ID == no.ID {
 				deleteExistingOption = false
-				if no.File != nil {
-					return ErrOptionFileImmutable
-				}
 				if eo.Position != no.Position {
 					optionsToUpdate = append(optionsToUpdate, updatePostOption{
 						ID:       eo.ID,
@@ -393,44 +374,13 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 	wg := sync.WaitGroup{}
 	optionsToInsert := []postOption{}
 	for _, o := range request.Options {
-		if o.File == nil {
-			existingOptionFound := false
-			for _, eo := range existingOptions {
-				if eo.ID == o.ID {
-					existingOptionFound = true
-					break
-				}
-			}
-			if !existingOptionFound {
-				return ErrOptionFileRequired
-			}
+		if s.bucketName != o.BucketName {
+			return fmt.Errorf("invalid bucket name")
 		}
-
-		if o.File.Size > (5 << 20) {
-			return ErrFileTooLarge
-		}
-
-		var fileRef string
-		switch o.File.ContentType {
-		case "image/jpeg":
-			fileRef = fmt.Sprintf(
-				// "https://storage.cloud.google.com/%s/post-options/%s.jpeg", here is the url for later
-				"%s/post-options/%s.jpeg",
-				s.bucketName, o.ID,
-			)
-		case "image/png":
-			fileRef = fmt.Sprintf(
-				"%s/post-options/%s.png",
-				s.bucketName, o.ID,
-			)
-		case "image/gif":
-			fileRef = fmt.Sprintf(
-				"%s/post-options/%s.gif",
-				s.bucketName, o.ID,
-			)
-		default:
-			return ErrUnsupportedFileType
-		}
+		fileRef := fmt.Sprintf(
+			"%s/%s",
+			s.bucketName, o.FileKey,
+		)
 		optionsToInsert = append(optionsToInsert, postOption{
 			ID:       o.ID,
 			PostID:   postToUpsert.ID,
@@ -438,10 +388,17 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			FileRef:  fileRef,
 		})
 		wg.Add(1)
-		go func(ref string, file Upload) {
+		go func(fileKey string) {
 			defer wg.Done()
-			s.addObjToBucket(ctx, ref, file)
-		}(fileRef, *o.File)
+			if _, err := s.bucket.Object(fileKey).If(storage.Conditions{
+				DoesNotExist: true,
+			}).Attrs(ctx); err != nil {
+				if err == storage.ErrObjectNotExist {
+					panic(fmt.Sprintf("file %s does not exist", fileKey))
+				}
+				panic(fmt.Errorf("verifying file exists: %v", err))
+			}
+		}(o.FileKey)
 	}
 
 	if err = upsertPost(ctx, tx, postToUpsert); err != nil {
@@ -528,15 +485,29 @@ func (s *srv) GetVotesByFilter(
 	return res, nil
 }
 
-func (s *srv) addObjToBucket(ctx context.Context, fileRef string, file Upload) {
-	obj := s.bucket.Object(fileRef)
-	w := obj.NewWriter(ctx)
-	if _, err := io.Copy(w, file.File); err != nil {
-		panic(fmt.Sprintf("copying bytes: %v", err))
+func (s *srv) GenerateSignedPostOptionURL(
+	ctx context.Context,
+	request GenerateSignedPostOptionURLRequest,
+) (*GenerateSignedPostOptionURLResponse, error) {
+	ext := filepath.Ext(request.FileName)
+	if ext == "" {
+		return nil, fmt.Errorf("expected file extension to be non-empty")
 	}
-	w.ContentType = file.ContentType
-	w.CacheControl = "public,max-age=31536000" // one year
-	if err := w.Close(); err != nil {
-		panic(fmt.Sprintf("closing file: %v", err))
+	if request.ContentType == "" {
+		return nil, fmt.Errorf("expected content type to be non-empty")
 	}
+	res := GenerateSignedPostOptionURLResponse{
+		FileKey:    fmt.Sprintf("%s/%s", uuid.NewString(), ext),
+		BucketName: s.bucketName,
+	}
+	url, err := s.bucket.SignedURL(res.FileKey, &storage.SignedURLOptions{
+		Method:      "PUT",
+		Expires:     time.Now().Add(time.Minute * 15),
+		ContentType: request.ContentType,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("creating SignedURL: %w", err)
+	}
+	res.URL = url
+	return &res, nil
 }
