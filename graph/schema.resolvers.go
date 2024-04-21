@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"quorum-api/graph/model"
@@ -52,12 +51,10 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			},
 		)
 		if err != nil {
-			log.Printf("error getting customers: %v", err)
-			return nil, ErrUnexpected
+			panic(err)
 		}
 		if len(customers) != 1 {
-			log.Printf("expected 1 customer")
-			return nil, ErrUnexpected
+			panic("expected exactly 1 customer")
 		}
 		customerID = customers[0].ID
 	case srvcustomer.ErrInvalidEmail:
@@ -70,8 +67,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			},
 		}, nil
 	default:
-		log.Printf("error creating unverified customer: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 		IsVerified: false,
@@ -84,8 +80,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
-		log.Printf("error signing token: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
@@ -100,8 +95,7 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 			"confirmation_link": confirmationLink,
 		},
 	}); err != nil {
-		log.Printf("error sending email: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 	return &model.SignUpPayload{}, nil
 }
@@ -149,8 +143,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 	})
 	tokenString, err := token.SignedString([]byte(r.JWTSecret))
 	if err != nil {
-		log.Printf("error signing token: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 	queryParams := url.Values{}
 	queryParams.Add("returnTo", input.ReturnTo)
@@ -165,8 +158,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 			"confirmation_link": confirmationLink,
 		},
 	}); err != nil {
-		log.Printf("error sending email: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 	return &model.GetLoginLinkPayload{}, nil
 }
@@ -210,13 +202,11 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 		})
 		tokenString, err := token.SignedString([]byte(r.JWTSecret))
 		if err != nil {
-			log.Printf("error signing token: %v", err)
-			return nil, ErrUnexpected
+			panic(err)
 		}
 		customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, customerID)
 		if err != nil {
-			log.Printf("loading customer: %v", err)
-			return nil, ErrUnexpected
+			panic(err)
 		}
 		return &model.VerifyCustomerTokenPayload{
 			NewToken: &tokenString,
@@ -339,8 +329,7 @@ func (r *mutationResolver) GenerateSignedPostOptionURL(ctx context.Context, inpu
 				},
 			}, nil
 		}
-		log.Printf("error generating signed url: %v", err)
-		return nil, ErrUnexpected
+		panic(err)
 	}
 
 	return &model.GenerateSignedPostOptionURLPayload{
@@ -457,18 +446,3 @@ type mutationResolver struct{ *Resolver }
 type postResolver struct{ *Resolver }
 type postVoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-var ErrUnexpected = errors.New("unexpected error occurred")
-
-func (r *postResolver) CreatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
-}
-func (r *postResolver) UpdatedAt(ctx context.Context, obj *srvpost.Post) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
-}
