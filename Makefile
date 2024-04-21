@@ -38,6 +38,8 @@ migrate:
 dockerbuild:
 	docker build .
 
-
+.PHONY: updatebucketcors
+updatebucketcors:
+	gcloud storage buckets update gs://quorum-vote --cors-file=./bucket-cors-policy.json
 
 # gcloud auth configure-docker australia-southeast1-docker.pkg.dev

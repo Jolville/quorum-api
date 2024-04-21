@@ -1,0 +1,14 @@
+[
+  {
+    "origin": ["http://localhost:5173"],
+    "method": ["GET", "PUT"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 31536000
+  },
+  {
+    "origin": ["https://quorumvote.com"],
+    "method": ["GET", "PUT"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 31536000
+  }
+]
