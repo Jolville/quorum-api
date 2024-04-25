@@ -235,7 +235,7 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 			Position:   o.Position,
 			ID:         o.ID,
 			BucketName: o.BucketName,
-			FileKey:    o.FilePath,
+			FileKey:    o.FileKey,
 		})
 	}
 

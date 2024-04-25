@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -489,7 +490,7 @@ func (s *srv) GenerateSignedPostOptionURL(
 	ctx context.Context,
 	request GenerateSignedPostOptionURLRequest,
 ) (*GenerateSignedPostOptionURLResponse, error) {
-	ext := filepath.Ext(request.FileName)
+	ext := filepath.Ext(strings.ToLower(request.FileName))
 	if ext == "" {
 		return nil, fmt.Errorf("expected file extension to be non-empty")
 	}

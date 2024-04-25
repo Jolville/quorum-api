@@ -6046,7 +6046,7 @@ func (ec *executionContext) unmarshalInputUpsertPostOptionInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "position", "bucketName", "filePath"}
+	fieldsInOrder := [...]string{"id", "position", "bucketName", "fileKey"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6074,13 +6074,13 @@ func (ec *executionContext) unmarshalInputUpsertPostOptionInput(ctx context.Cont
 				return it, err
 			}
 			it.BucketName = data
-		case "filePath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filePath"))
+		case "fileKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileKey"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.FilePath = data
+			it.FileKey = data
 		}
 	}
 

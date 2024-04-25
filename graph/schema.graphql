@@ -194,7 +194,7 @@ input UpsertPostOptionInput {
   id: UUID!
   position: Int!
   bucketName: String!
-  filePath: String!
+  fileKey: String!
 }
 
 enum PostStatus {

@@ -322,7 +322,7 @@ type UpsertPostOptionInput struct {
 	ID         uuid.UUID `json:"id"`
 	Position   int       `json:"position"`
 	BucketName string    `json:"bucketName"`
-	FilePath   string    `json:"filePath"`
+	FileKey    string    `json:"fileKey"`
 }
 
 type UpsertPostPayload struct {
