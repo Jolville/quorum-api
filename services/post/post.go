@@ -501,7 +501,7 @@ func (s *srv) GenerateSignedPostOptionURL(
 		return nil, fmt.Errorf("expected content type to be non-empty")
 	}
 	res := GenerateSignedPostOptionURLResponse{
-		FileKey:    fmt.Sprintf("%s/%s", uuid.NewString(), ext),
+		FileKey:    fmt.Sprintf("%s%s", uuid.NewString(), ext),
 		BucketName: s.bucketName,
 	}
 	url, err := s.bucket.SignedURL(res.FileKey, &storage.SignedURLOptions{
