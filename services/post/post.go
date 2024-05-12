@@ -548,6 +548,22 @@ func (s *srv) SubmitVote(ctx context.Context, request SubmitVoteRequest) (*Submi
 
 	postOption := postOptions[0]
 
+	posts, err := getPostsByFilter(ctx, s.db, getPostsByFilterParams{
+		IDs: []uuid.UUID{postOption.PostID},
+	}, DBLockUnspecified)
+	if err != nil {
+		return nil, fmt.Errorf("selecting post: %w", err)
+	}
+
+	if len(posts) != 1 {
+		return nil, ErrOptionNotFound
+	}
+
+	post := posts[0]
+	if post.OpensAt.Before(time.Now()) || !time.Now().Before(*post.ClosesAt) {
+		return nil, ErrOptionNotFound
+	}
+
 	voteID := uuid.New()
 	if err = insertPostVote(ctx, s.db, insertPostVoteParams{
 		id:           voteID,
