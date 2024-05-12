@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 )
 
 type SRVPost interface {
@@ -111,7 +111,7 @@ var ErrPostNotOwned = errors.New("post with id already authored by another user"
 
 var ErrOpensAtAlreadyPassed = errors.New("live at time has already passed")
 
-var ErrOptionFileImmutable = errors.New("options file cannot be changed")
+var ErrOptionFileNotFound = errors.New("option file not found in bucket")
 
 var ErrClosesAtNotAfterOpensAt = errors.New("post close time must be after open time")
 
@@ -238,7 +238,7 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			}
 		}
 
-		wg := sync.WaitGroup{}
+		g, ctx := errgroup.WithContext(ctx)
 		optionsToInsert := []postOption{}
 		for _, o := range request.Options {
 			if s.bucketName != o.BucketName {
@@ -254,18 +254,16 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 				Position: o.Position,
 				FileRef:  fileRef,
 			})
-			wg.Add(1)
-			go func(fileKey string) {
-				defer wg.Done()
-				if _, err := s.bucket.Object(fileKey).If(storage.Conditions{
-					DoesNotExist: true,
-				}).Attrs(ctx); err != nil {
+			fileKey := o.FileKey
+			g.Go(func() error {
+				if _, err := s.bucket.Object(fileKey).Attrs(ctx); err != nil {
 					if err == storage.ErrObjectNotExist {
-						panic(fmt.Sprintf("file %s does not exist", fileKey))
+						return ErrOptionFileNotFound
 					}
-					panic(fmt.Errorf("verifying file exists: %v", err))
+					return fmt.Errorf("getting file metadata: %w", err)
 				}
-			}(o.FileKey)
+				return nil
+			})
 		}
 
 		if err = upsertPost(ctx, tx, postToUpsert); err != nil {
@@ -278,7 +276,10 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			}
 		}
 
-		wg.Wait()
+		if err = g.Wait(); err != nil {
+			return fmt.Errorf("verifying option file: %w", err)
+		}
+
 		if err = tx.Commit(); err != nil {
 			return fmt.Errorf("comitting tx: %w", err)
 		}
@@ -386,7 +387,7 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		}
 	}
 
-	wg := sync.WaitGroup{}
+	g, ctx := errgroup.WithContext(ctx)
 	optionsToInsert := []postOption{}
 	for _, o := range request.Options {
 		if s.bucketName != o.BucketName {
@@ -402,18 +403,16 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 			Position: o.Position,
 			FileRef:  fileRef,
 		})
-		wg.Add(1)
-		go func(fileKey string) {
-			defer wg.Done()
-			if _, err := s.bucket.Object(fileKey).If(storage.Conditions{
-				DoesNotExist: true,
-			}).Attrs(ctx); err != nil {
+		fileKey := o.FileKey
+		g.Go(func() error {
+			if _, err := s.bucket.Object(fileKey).Attrs(ctx); err != nil {
 				if err == storage.ErrObjectNotExist {
-					panic(fmt.Sprintf("file %s does not exist", fileKey))
+					return ErrOptionFileNotFound
 				}
-				panic(fmt.Errorf("verifying file exists: %v", err))
+				return fmt.Errorf("getting file metadata: %w", err)
 			}
-		}(o.FileKey)
+			return nil
+		})
 	}
 
 	if err = upsertPost(ctx, tx, postToUpsert); err != nil {
@@ -439,7 +438,10 @@ func (s *srv) UpsertPost(ctx context.Context, request UpsertPostRequest) error {
 		}
 	}
 
-	wg.Wait()
+	if err = g.Wait(); err != nil {
+		return fmt.Errorf("verifying option file: %w", err)
+	}
+
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("comitting tx: %w", err)
 	}
