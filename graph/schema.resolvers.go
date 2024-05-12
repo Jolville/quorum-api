@@ -119,7 +119,7 @@ func (r *mutationResolver) GetLoginLink(ctx context.Context, input model.GetLogi
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("getting customers: %v", err)
+		panic(fmt.Errorf("getting customers: %v", err))
 	}
 	if len(customers) < 1 {
 		return &model.GetLoginLinkPayload{
@@ -179,17 +179,17 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 				},
 			}, nil
 		}
-		return nil, fmt.Errorf("parsing token: %v", err)
+		panic(fmt.Errorf("parsing token: %v", err))
 	} else if claims, ok := token.Claims.(*JWTClaims); ok {
 		if claims.IsVerified {
-			return nil, fmt.Errorf("expected token to not be verified")
+			panic(fmt.Errorf("expected token to not be verified"))
 		}
 		customerID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			return nil, fmt.Errorf("expected customerID to be a uuid")
+			panic(fmt.Errorf("expected customerID to be a uuid"))
 		}
 		if err = r.Services.Customer.VerifyCustomer(ctx, customerID); err != nil {
-			return nil, fmt.Errorf("verifying customer: %v", err)
+			panic(fmt.Errorf("verifying customer: %v", err))
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
 			IsVerified: true,
@@ -213,7 +213,7 @@ func (r *mutationResolver) VerifyCustomerToken(ctx context.Context, input model.
 			Customer: customer,
 		}, nil
 	}
-	return nil, fmt.Errorf("unknown claims type, cannot proceed")
+	panic(fmt.Errorf("unknown claims type, cannot proceed"))
 }
 
 // UpsertPost is the resolver for the upsertPost field.
@@ -284,14 +284,13 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 			},
 		}, nil
 	}
-	// todo handle the other known errors
 	if err != nil {
-		return nil, fmt.Errorf("creating post: %w", err)
+		panic(fmt.Errorf("creating post: %w", err))
 	}
 
 	post, err := GetLoaders(ctx).PostLoader.Load(ctx, input.ID)
 	if err != nil {
-		return nil, fmt.Errorf("loading post: %w", err)
+		panic(fmt.Errorf("loading post: %w", err))
 	}
 
 	return &model.UpsertPostPayload{
@@ -394,7 +393,7 @@ func (r *postResolver) Category(ctx context.Context, obj *srvpost.Post) (*model.
 func (r *postResolver) Author(ctx context.Context, obj *srvpost.Post) (*srvcustomer.Customer, error) {
 	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.AuthorID)
 	if err != nil {
-		return nil, fmt.Errorf("loading author: %w", err)
+		panic(fmt.Errorf("loading author: %w", err))
 	}
 	return customer, nil
 }
@@ -403,7 +402,7 @@ func (r *postResolver) Author(ctx context.Context, obj *srvpost.Post) (*srvcusto
 func (r *postResolver) Options(ctx context.Context, obj *srvpost.Post) ([]*srvpost.Option, error) {
 	options, err := GetLoaders(ctx).PostOptionLoader.LoadAll(ctx, obj.OptionIDs)
 	if err != nil {
-		return nil, fmt.Errorf("loading options: %w", err)
+		panic(fmt.Errorf("loading options: %w", err))
 	}
 	return options, nil
 }
@@ -412,7 +411,7 @@ func (r *postResolver) Options(ctx context.Context, obj *srvpost.Post) ([]*srvpo
 func (r *postResolver) Votes(ctx context.Context, obj *srvpost.Post) ([]*srvpost.Vote, error) {
 	votes, err := GetLoaders(ctx).PostVoteLoader.LoadAll(ctx, obj.VoteIDs)
 	if err != nil {
-		return nil, fmt.Errorf("loading votes: %w", err)
+		panic(fmt.Errorf("loading votes: %w", err))
 	}
 	return votes, nil
 }
@@ -435,7 +434,7 @@ func (r *postResolver) Status(ctx context.Context, obj *srvpost.Post) (model.Pos
 func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpost.Post, error) {
 	post, err := GetLoaders(ctx).PostLoader.Load(ctx, obj.PostID)
 	if err != nil {
-		return nil, fmt.Errorf("loading post: %w", err)
+		panic(fmt.Errorf("loading post: %w", err))
 	}
 	return post, nil
 }
@@ -444,7 +443,7 @@ func (r *postVoteResolver) Post(ctx context.Context, obj *srvpost.Vote) (*srvpos
 func (r *postVoteResolver) Voter(ctx context.Context, obj *srvpost.Vote) (*srvcustomer.Customer, error) {
 	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, obj.CustomerID)
 	if err != nil {
-		return nil, fmt.Errorf("loading author: %w", err)
+		panic(fmt.Errorf("loading author: %w", err))
 	}
 	return customer, nil
 }
@@ -457,7 +456,7 @@ func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, er
 	}
 	customer, err := GetLoaders(ctx).CustomerLoader.Load(ctx, verifiedCustomer.UUID)
 	if err != nil {
-		return nil, fmt.Errorf("getting customer: %w", err)
+		panic(fmt.Errorf("getting customer: %w", err))
 	}
 	return customer, nil
 }
@@ -466,7 +465,7 @@ func (r *queryResolver) Customer(ctx context.Context) (*srvcustomer.Customer, er
 func (r *queryResolver) Post(ctx context.Context, id uuid.UUID) (*srvpost.Post, error) {
 	post, err := GetLoaders(ctx).PostLoader.Load(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("loading post: %w", err)
+		panic(fmt.Errorf("loading post: %w", err))
 	}
 	return post, nil
 }

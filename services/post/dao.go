@@ -95,8 +95,15 @@ func getPostsByFilter(
 			post.updated_at,
 			post.opens_at,
 			post.closes_at
-		order by post.opens_at desc
-	%s`, query, dbLock)
+		order by post.opens_at desc`,
+		query)
+
+	if dbLock != DBLockUnspecified {
+		query = fmt.Sprintf(`
+			with q as (%s)
+			select * from q %s
+		`, query, dbLock)
+	}
 
 	if err := db.SelectContext(ctx, &posts, query, args...); err != nil {
 		return nil, fmt.Errorf("selecting posts: %w", err)
