@@ -339,6 +339,47 @@ func (r *mutationResolver) GenerateSignedPostOptionURL(ctx context.Context, inpu
 	}, nil
 }
 
+// SubmitVote is the resolver for the submitVote field.
+func (r *mutationResolver) SubmitVote(ctx context.Context, input model.SubmitVoteInput) (*model.SubmitVotePayload, error) {
+	verifiedCustomer := GetVerifiedCustomer(ctx)
+	if !verifiedCustomer.Valid {
+		return &model.SubmitVotePayload{
+			Errors: []model.SubmitVoteError{
+				model.UnauthenticatedError{
+					Message: "Sign up or login to vote on a post",
+				},
+			},
+		}, nil
+	}
+
+	resp, err := r.Services.Post.SubmitVote(ctx, srvpost.SubmitVoteRequest{
+		CustomerID: verifiedCustomer.UUID,
+		OptionID:   input.OptionID,
+		Reason:     input.Reason,
+	})
+	if err != nil {
+		if errors.Is(err, srvpost.ErrOptionNotFound) {
+			return &model.SubmitVotePayload{
+				Errors: []model.SubmitVoteError{
+					model.OptionNotFoundError{
+						Message: err.Error(),
+						Path:    []string{"input", "optionId"},
+					},
+				},
+			}, nil
+		}
+	}
+
+	post, err := GetLoaders(ctx).PostLoader.Load(ctx, resp.PostID)
+	if err != nil {
+		panic(fmt.Errorf("loading post: %w", err))
+	}
+
+	return &model.SubmitVotePayload{
+		Post: post,
+	}, nil
+}
+
 // DesignPhase is the resolver for the designPhase field.
 func (r *postResolver) DesignPhase(ctx context.Context, obj *srvpost.Post) (*model.DesignPhase, error) {
 	return (*model.DesignPhase)(obj.DesignPhase), nil

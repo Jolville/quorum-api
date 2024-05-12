@@ -312,3 +312,36 @@ func updatePostOptionPositions(
 	}
 	return nil
 }
+
+type insertPostVoteParams struct {
+	id           uuid.UUID `db:"id"`
+	postOptionID uuid.UUID `db:"post_option_id"`
+	postID       uuid.UUID `db:"post_id"`
+	customerID   uuid.UUID `db:"customer_id"`
+	reason       *string   `db:"reason"`
+}
+
+func insertPostVote(
+	ctx context.Context,
+	db database.Q,
+	params insertPostVoteParams,
+) error {
+	if _, err := db.NamedExecContext(ctx, `
+		insert into post_vote (
+			id,
+			post_option_id,
+			post_id,
+			customer_id,
+			reason
+		) values (
+			:id,
+			:post_option_id,
+			:post_id,
+			:customer_id,
+			:reason
+		) on conflict do nothing
+	`, params); err != nil {
+		return err
+	}
+	return nil
+}

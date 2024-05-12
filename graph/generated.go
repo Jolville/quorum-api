@@ -106,11 +106,17 @@ type ComplexityRoot struct {
 		GenerateSignedPostOptionURL func(childComplexity int, input model.GenerateSignedPostOptionUrInput) int
 		GetLoginLink                func(childComplexity int, input model.GetLoginLinkInput) int
 		SignUp                      func(childComplexity int, input model.SignUpInput) int
+		SubmitVote                  func(childComplexity int, input model.SubmitVoteInput) int
 		UpsertPost                  func(childComplexity int, input model.UpsertPostInput) int
 		VerifyCustomerToken         func(childComplexity int, input model.VerifyCustomerTokenInput) int
 	}
 
 	OpensAtAlreadyPassedError struct {
+		Message func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
+	OptionNotFoundError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
@@ -152,6 +158,11 @@ type ComplexityRoot struct {
 		Errors func(childComplexity int) int
 	}
 
+	SubmitVotePayload struct {
+		Errors func(childComplexity int) int
+		Post   func(childComplexity int) int
+	}
+
 	TooFewOptionsError struct {
 		Message func(childComplexity int) int
 		Path    func(childComplexity int) int
@@ -190,6 +201,7 @@ type MutationResolver interface {
 	VerifyCustomerToken(ctx context.Context, input model.VerifyCustomerTokenInput) (*model.VerifyCustomerTokenPayload, error)
 	UpsertPost(ctx context.Context, input model.UpsertPostInput) (*model.UpsertPostPayload, error)
 	GenerateSignedPostOptionURL(ctx context.Context, input model.GenerateSignedPostOptionUrInput) (*model.GenerateSignedPostOptionURLPayload, error)
+	SubmitVote(ctx context.Context, input model.SubmitVoteInput) (*model.SubmitVotePayload, error)
 }
 type PostResolver interface {
 	DesignPhase(ctx context.Context, obj *srvpost.Post) (*model.DesignPhase, error)
@@ -419,6 +431,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SignUp(childComplexity, args["input"].(model.SignUpInput)), true
 
+	case "Mutation.submitVote":
+		if e.complexity.Mutation.SubmitVote == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitVote_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SubmitVote(childComplexity, args["input"].(model.SubmitVoteInput)), true
+
 	case "Mutation.upsertPost":
 		if e.complexity.Mutation.UpsertPost == nil {
 			break
@@ -456,6 +480,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OpensAtAlreadyPassedError.Path(childComplexity), true
+
+	case "OptionNotFoundError.message":
+		if e.complexity.OptionNotFoundError.Message == nil {
+			break
+		}
+
+		return e.complexity.OptionNotFoundError.Message(childComplexity), true
+
+	case "OptionNotFoundError.path":
+		if e.complexity.OptionNotFoundError.Path == nil {
+			break
+		}
+
+		return e.complexity.OptionNotFoundError.Path(childComplexity), true
 
 	case "Post.author":
 		if e.complexity.Post.Author == nil {
@@ -616,6 +654,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SignUpPayload.Errors(childComplexity), true
 
+	case "SubmitVotePayload.errors":
+		if e.complexity.SubmitVotePayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.SubmitVotePayload.Errors(childComplexity), true
+
+	case "SubmitVotePayload.post":
+		if e.complexity.SubmitVotePayload.Post == nil {
+			break
+		}
+
+		return e.complexity.SubmitVotePayload.Post(childComplexity), true
+
 	case "TooFewOptionsError.message":
 		if e.complexity.TooFewOptionsError.Message == nil {
 			break
@@ -718,6 +770,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGenerateSignedPostOptionUrInput,
 		ec.unmarshalInputGetLoginLinkInput,
 		ec.unmarshalInputSignUpInput,
+		ec.unmarshalInputSubmitVoteInput,
 		ec.unmarshalInputUpsertPostInput,
 		ec.unmarshalInputUpsertPostOptionInput,
 		ec.unmarshalInputVerifyCustomerTokenInput,
@@ -874,6 +927,21 @@ func (ec *executionContext) field_Mutation_signUp_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNSignUpInput2quorumᚑapiᚋgraphᚋmodelᚐSignUpInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_submitVote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SubmitVoteInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSubmitVoteInput2quorumᚑapiᚋgraphᚋmodelᚐSubmitVoteInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2228,6 +2296,67 @@ func (ec *executionContext) fieldContext_Mutation_generateSignedPostOptionUrl(ct
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_submitVote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_submitVote(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SubmitVote(rctx, fc.Args["input"].(model.SubmitVoteInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubmitVotePayload)
+	fc.Result = res
+	return ec.marshalNSubmitVotePayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐSubmitVotePayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_submitVote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "post":
+				return ec.fieldContext_SubmitVotePayload_post(ctx, field)
+			case "errors":
+				return ec.fieldContext_SubmitVotePayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubmitVotePayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitVote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OpensAtAlreadyPassedError_message(ctx context.Context, field graphql.CollectedField, obj *model.OpensAtAlreadyPassedError) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_OpensAtAlreadyPassedError_message(ctx, field)
 	if err != nil {
@@ -2303,6 +2432,91 @@ func (ec *executionContext) _OpensAtAlreadyPassedError_path(ctx context.Context,
 func (ec *executionContext) fieldContext_OpensAtAlreadyPassedError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OpensAtAlreadyPassedError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OptionNotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.OptionNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OptionNotFoundError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OptionNotFoundError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OptionNotFoundError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OptionNotFoundError_path(ctx context.Context, field graphql.CollectedField, obj *model.OptionNotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OptionNotFoundError_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OptionNotFoundError_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OptionNotFoundError",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3480,6 +3694,117 @@ func (ec *executionContext) fieldContext_SignUpPayload_errors(ctx context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SignUpError does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubmitVotePayload_post(ctx context.Context, field graphql.CollectedField, obj *model.SubmitVotePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubmitVotePayload_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Post, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*srvpost.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚖquorumᚑapiᚋservicesᚋpostᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubmitVotePayload_post(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubmitVotePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "designPhase":
+				return ec.fieldContext_Post_designPhase(ctx, field)
+			case "context":
+				return ec.fieldContext_Post_context(ctx, field)
+			case "category":
+				return ec.fieldContext_Post_category(ctx, field)
+			case "opensAt":
+				return ec.fieldContext_Post_opensAt(ctx, field)
+			case "closesAt":
+				return ec.fieldContext_Post_closesAt(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "options":
+				return ec.fieldContext_Post_options(ctx, field)
+			case "votes":
+				return ec.fieldContext_Post_votes(ctx, field)
+			case "status":
+				return ec.fieldContext_Post_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubmitVotePayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.SubmitVotePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubmitVotePayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.SubmitVoteError)
+	fc.Result = res
+	return ec.marshalNSubmitVoteError2ᚕquorumᚑapiᚋgraphᚋmodelᚐSubmitVoteErrorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubmitVotePayload_errors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubmitVotePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubmitVoteError does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5970,6 +6295,40 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSubmitVoteInput(ctx context.Context, obj interface{}) (model.SubmitVoteInput, error) {
+	var it model.SubmitVoteInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"optionId", "reason"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "optionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("optionId"))
+			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OptionID = data
+		case "reason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reason = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpsertPostInput(ctx context.Context, obj interface{}) (model.UpsertPostInput, error) {
 	var it model.UpsertPostInput
 	asMap := map[string]interface{}{}
@@ -6150,6 +6509,13 @@ func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet
 			return graphql.Null
 		}
 		return ec._LinkExpiredError(ctx, sel, obj)
+	case model.OptionNotFoundError:
+		return ec._OptionNotFoundError(ctx, sel, &obj)
+	case *model.OptionNotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._OptionNotFoundError(ctx, sel, obj)
 	case model.TooManyOptionsError:
 		return ec._TooManyOptionsError(ctx, sel, &obj)
 	case *model.TooManyOptionsError:
@@ -6275,6 +6641,29 @@ func (ec *executionContext) _SignUpError(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._InvalidReturnToError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SubmitVoteError(ctx context.Context, sel ast.SelectionSet, obj model.SubmitVoteError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.OptionNotFoundError:
+		return ec._OptionNotFoundError(ctx, sel, &obj)
+	case *model.OptionNotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._OptionNotFoundError(ctx, sel, obj)
+	case model.UnauthenticatedError:
+		return ec._UnauthenticatedError(ctx, sel, &obj)
+	case *model.UnauthenticatedError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UnauthenticatedError(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -6801,6 +7190,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "submitVote":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitVote(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6842,6 +7238,47 @@ func (ec *executionContext) _OpensAtAlreadyPassedError(ctx context.Context, sel 
 			}
 		case "path":
 			out.Values[i] = ec._OpensAtAlreadyPassedError_path(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var optionNotFoundErrorImplementors = []string{"OptionNotFoundError", "BaseError", "SubmitVoteError"}
+
+func (ec *executionContext) _OptionNotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.OptionNotFoundError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, optionNotFoundErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OptionNotFoundError")
+		case "message":
+			out.Values[i] = ec._OptionNotFoundError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._OptionNotFoundError_path(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7401,6 +7838,47 @@ func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var submitVotePayloadImplementors = []string{"SubmitVotePayload"}
+
+func (ec *executionContext) _SubmitVotePayload(ctx context.Context, sel ast.SelectionSet, obj *model.SubmitVotePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, submitVotePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubmitVotePayload")
+		case "post":
+			out.Values[i] = ec._SubmitVotePayload_post(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._SubmitVotePayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var tooFewOptionsErrorImplementors = []string{"TooFewOptionsError", "BaseError", "UpsertPostError"}
 
 func (ec *executionContext) _TooFewOptionsError(ctx context.Context, sel ast.SelectionSet, obj *model.TooFewOptionsError) graphql.Marshaler {
@@ -7483,7 +7961,7 @@ func (ec *executionContext) _TooManyOptionsError(ctx context.Context, sel ast.Se
 	return out
 }
 
-var unauthenticatedErrorImplementors = []string{"UnauthenticatedError", "UpsertPostError", "BaseError", "GenerateSignedPostOptionUrlError"}
+var unauthenticatedErrorImplementors = []string{"UnauthenticatedError", "SubmitVoteError", "UpsertPostError", "BaseError", "GenerateSignedPostOptionUrlError"}
 
 func (ec *executionContext) _UnauthenticatedError(ctx context.Context, sel ast.SelectionSet, obj *model.UnauthenticatedError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, unauthenticatedErrorImplementors)
@@ -8267,6 +8745,79 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNSubmitVoteError2quorumᚑapiᚋgraphᚋmodelᚐSubmitVoteError(ctx context.Context, sel ast.SelectionSet, v model.SubmitVoteError) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubmitVoteError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSubmitVoteError2ᚕquorumᚑapiᚋgraphᚋmodelᚐSubmitVoteErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SubmitVoteError) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSubmitVoteError2quorumᚑapiᚋgraphᚋmodelᚐSubmitVoteError(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNSubmitVoteInput2quorumᚑapiᚋgraphᚋmodelᚐSubmitVoteInput(ctx context.Context, v interface{}) (model.SubmitVoteInput, error) {
+	res, err := ec.unmarshalInputSubmitVoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubmitVotePayload2quorumᚑapiᚋgraphᚋmodelᚐSubmitVotePayload(ctx context.Context, sel ast.SelectionSet, v model.SubmitVotePayload) graphql.Marshaler {
+	return ec._SubmitVotePayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSubmitVotePayload2ᚖquorumᚑapiᚋgraphᚋmodelᚐSubmitVotePayload(ctx context.Context, sel ast.SelectionSet, v *model.SubmitVotePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubmitVotePayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {

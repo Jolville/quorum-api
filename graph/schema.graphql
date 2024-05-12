@@ -94,7 +94,25 @@ type Mutation {
   generateSignedPostOptionUrl(
     input: GenerateSignedPostOptionUrInput!
   ): GenerateSignedPostOptionUrlPayload!
+  submitVote(input: SubmitVoteInput!): SubmitVotePayload!
 }
+
+input SubmitVoteInput {
+  optionId: UUID!
+  reason: String
+}
+
+type SubmitVotePayload {
+  post: Post
+  errors: [SubmitVoteError!]!
+}
+
+type OptionNotFoundError implements BaseError {
+  message: String!
+  path: [String!]
+}
+
+union SubmitVoteError = OptionNotFoundError | UnauthenticatedError
 
 type TooManyOptionsError implements BaseError {
   message: String!

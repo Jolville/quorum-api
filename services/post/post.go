@@ -20,6 +20,7 @@ type SRVPost interface {
 	GetOptionsByFilter(ctx context.Context, request GetOptionsByFilterRequest) ([]Option, error)
 	GetVotesByFilter(ctx context.Context, request GetVotesByFilterRequest) ([]Vote, error)
 	GenerateSignedPostOptionURL(ctx context.Context, request GenerateSignedPostOptionURLRequest) (*GenerateSignedPostOptionURLResponse, error)
+	SubmitVote(ctx context.Context, request SubmitVoteRequest) (*SubmitVoteResponse, error)
 }
 
 type GetPostsByFilterRequest struct {
@@ -91,6 +92,17 @@ type GenerateSignedPostOptionURLResponse struct {
 	URL        string
 }
 
+type SubmitVoteRequest struct {
+	OptionID   uuid.UUID
+	CustomerID uuid.UUID
+	Reason     *string
+}
+
+type SubmitVoteResponse struct {
+	PostID uuid.UUID
+	VoteID uuid.UUID
+}
+
 var ErrTooManyOptions = errors.New("exceeded the maximum amount of options")
 
 var ErrTooFewOptions = errors.New("at least 2 options are required to create a post")
@@ -108,6 +120,8 @@ var ErrClosesAtNotSet = errors.New("must set close time when publishing a post")
 var ErrOptionPositionsInvalid = errors.New("must provide unique position from 1 to 6")
 
 var ErrUnsupportedFileType = errors.New("only .jpeg, .png and .gif files are supported")
+
+var ErrOptionNotFound = errors.New("option not found")
 
 func New(db *sqlx.DB, bucket *storage.BucketHandle, bucketName string) SRVPost {
 	return &srv{
@@ -514,4 +528,39 @@ func (s *srv) GenerateSignedPostOptionURL(
 	}
 	res.URL = url
 	return &res, nil
+}
+
+func (s *srv) SubmitVote(ctx context.Context, request SubmitVoteRequest) (*SubmitVoteResponse, error) {
+	postOptions, err := getPostOptionsByFilter(
+		ctx, s.db,
+		getPostOptionsByFilterParams{
+			IDs: []uuid.UUID{request.OptionID},
+		},
+		DBLockUnspecified,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("selecting post options: %w", err)
+	}
+
+	if len(postOptions) != 1 {
+		return nil, ErrOptionNotFound
+	}
+
+	postOption := postOptions[0]
+
+	voteID := uuid.New()
+	if err = insertPostVote(ctx, s.db, insertPostVoteParams{
+		id:           voteID,
+		postOptionID: postOption.ID,
+		postID:       postOption.PostID,
+		reason:       request.Reason,
+		customerID:   request.CustomerID,
+	}); err != nil {
+		return nil, fmt.Errorf("inserting post: %w", err)
+	}
+
+	return &SubmitVoteResponse{
+		PostID: postOption.PostID,
+		VoteID: voteID,
+	}, nil
 }

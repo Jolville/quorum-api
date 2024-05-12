@@ -31,6 +31,10 @@ type SignUpError interface {
 	IsSignUpError()
 }
 
+type SubmitVoteError interface {
+	IsSubmitVoteError()
+}
+
 type UpsertPostError interface {
 	IsUpsertPostError()
 }
@@ -209,6 +213,26 @@ func (this OpensAtAlreadyPassedError) GetPath() []string {
 
 func (OpensAtAlreadyPassedError) IsUpsertPostError() {}
 
+type OptionNotFoundError struct {
+	Message string   `json:"message"`
+	Path    []string `json:"path,omitempty"`
+}
+
+func (OptionNotFoundError) IsBaseError()            {}
+func (this OptionNotFoundError) GetMessage() string { return this.Message }
+func (this OptionNotFoundError) GetPath() []string {
+	if this.Path == nil {
+		return nil
+	}
+	interfaceSlice := make([]string, 0, len(this.Path))
+	for _, concrete := range this.Path {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
+
+func (OptionNotFoundError) IsSubmitVoteError() {}
+
 type Query struct {
 }
 
@@ -222,6 +246,16 @@ type SignUpInput struct {
 
 type SignUpPayload struct {
 	Errors []SignUpError `json:"errors"`
+}
+
+type SubmitVoteInput struct {
+	OptionID uuid.UUID `json:"optionId"`
+	Reason   *string   `json:"reason,omitempty"`
+}
+
+type SubmitVotePayload struct {
+	Post   *srvpost.Post     `json:"post,omitempty"`
+	Errors []SubmitVoteError `json:"errors"`
 }
 
 type TooFewOptionsError struct {
@@ -268,6 +302,8 @@ type UnauthenticatedError struct {
 	Message string   `json:"message"`
 	Path    []string `json:"path,omitempty"`
 }
+
+func (UnauthenticatedError) IsSubmitVoteError() {}
 
 func (UnauthenticatedError) IsUpsertPostError() {}
 
