@@ -247,6 +247,7 @@ func (r *mutationResolver) UpsertPost(ctx context.Context, input model.UpsertPos
 		OpensAt:     input.OpensAt,
 		ClosesAt:    input.ClosesAt,
 		AuthorID:    verifiedCustomer.UUID,
+		Context:     input.Context,
 	})
 	if errors.Is(err, srvpost.ErrOpensAtAlreadyPassed) {
 		return &model.UpsertPostPayload{
